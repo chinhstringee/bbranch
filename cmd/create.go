@@ -137,8 +137,9 @@ func selectReposInteractively(cfg *config.Config, client *bitbucket.Client) ([]s
 	form := huh.NewForm(
 		huh.NewGroup(
 			huh.NewMultiSelect[string]().
-				Title("Select repositories").
+				Title("Select repositories (type to filter)").
 				Options(options...).
+				Filterable(true).
 				Value(&selected),
 		),
 	)
