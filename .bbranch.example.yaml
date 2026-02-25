@@ -1,0 +1,17 @@
+workspace: my-workspace
+
+oauth:
+  client_id: ${BITBUCKET_OAUTH_CLIENT_ID}
+  client_secret: ${BITBUCKET_OAUTH_CLIENT_SECRET}
+
+groups:
+  backend:
+    - repo-api
+    - repo-worker
+  frontend:
+    - repo-web
+    - repo-mobile
+
+defaults:
+  source_branch: master
+  branch_prefix: "feature/"
