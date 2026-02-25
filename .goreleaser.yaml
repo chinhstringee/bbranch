@@ -19,6 +19,7 @@ brews:
   - repository:
       owner: chinhstringee
       name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
     homepage: https://github.com/chinhstringee/bbranch
     description: CLI tool for creating Git branches across multiple Bitbucket repos
     license: MIT
