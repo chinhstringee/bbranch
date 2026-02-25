@@ -1,0 +1,33 @@
+version: 2
+
+builds:
+  - main: .
+    binary: bbranch
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+    goarch:
+      - amd64
+      - arm64
+
+archives:
+  - format: tar.gz
+
+brews:
+  - repository:
+      owner: chinhstringee
+      name: homebrew-tap
+    homepage: https://github.com/chinhstringee/bbranch
+    description: CLI tool for creating Git branches across multiple Bitbucket repos
+    license: MIT
+    install: |
+      bin.install "bbranch"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^chore:"

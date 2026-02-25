@@ -12,16 +12,20 @@ CLI tool for creating Git branches across multiple Bitbucket Cloud repositories 
 
 ## Quick Start
 
-### Prerequisites
-
-- Go 1.25+
-- A [Bitbucket OAuth consumer](https://support.atlassian.com/bitbucket-cloud/docs/use-oauth-on-bitbucket-cloud/) with callback URL `http://localhost:9876/callback`
-
 ### Install
 
 ```bash
-go build -o bbranch
+# Homebrew (macOS/Linux)
+brew tap chinhstringee/tap
+brew install bbranch
+
+# Or with Go
+go install github.com/chinhstringee/bbranch@latest
 ```
+
+### Prerequisites
+
+- A [Bitbucket OAuth consumer](https://support.atlassian.com/bitbucket-cloud/docs/use-oauth-on-bitbucket-cloud/) with callback URL `http://localhost:9876/callback`
 
 ### Configure
 
@@ -77,8 +81,8 @@ bbranch create feature/auth
 # Using a config group
 bbranch create feature/auth --group backend
 
-# Specific repos
-bbranch create bugfix/cors --repos api-repo,web-repo
+# Specific repos (supports fuzzy matching)
+bbranch create bugfix/cors --repos "api stringeex,subscription"
 
 # From a different source branch
 bbranch create release/v2.0 --from develop
@@ -92,7 +96,7 @@ bbranch create feature/test --dry-run
 | Flag | Short | Description |
 |------|-------|-------------|
 | `--group` | `-g` | Use a predefined repo group from config |
-| `--repos` | `-r` | Comma-separated repo slugs |
+| `--repos` | `-r` | Comma-separated patterns (fuzzy match, space = AND) |
 | `--from` | `-f` | Source branch (overrides config default) |
 | `--dry-run` | | Preview without executing |
 | `--interactive` | `-i` | Force interactive selection |
