@@ -13,7 +13,7 @@ func buildAuthApplier(cfg *config.Config) (bitbucket.AuthApplier, error) {
 	switch cfg.AuthMethod() {
 	case "api_token":
 		if cfg.ApiToken.Email == "" || cfg.ApiToken.Token == "" {
-			return nil, fmt.Errorf("api_token credentials not configured.\nSet them in .bbranch.yaml:\n  api_token:\n    email: your-email@example.com\n    token: your-api-token")
+			return nil, fmt.Errorf("api_token credentials not configured.\nRun 'bbranch setup' to configure interactively")
 		}
 		return bitbucket.BasicAuth(cfg.ApiToken.Email, cfg.ApiToken.Token), nil
 

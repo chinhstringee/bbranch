@@ -19,7 +19,7 @@ var loginCmd = &cobra.Command{
 		}
 
 		if cfg.AuthMethod() == "api_token" {
-			return fmt.Errorf("login is not needed when using api_token auth method.\nAPI tokens authenticate directly via config credentials")
+			return fmt.Errorf("login is not needed for API token auth.\nRun 'bbranch setup' to configure your credentials")
 		}
 
 		if cfg.OAuth.ClientID == "" || cfg.OAuth.ClientSecret == "" {
