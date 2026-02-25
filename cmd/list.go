@@ -5,7 +5,6 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
-	"github.com/chinhstringee/bbranch/internal/auth"
 	"github.com/chinhstringee/bbranch/internal/bitbucket"
 	"github.com/chinhstringee/bbranch/internal/config"
 )
@@ -23,11 +22,12 @@ var listCmd = &cobra.Command{
 			return fmt.Errorf("workspace not configured in .bbranch.yaml")
 		}
 
-		tokenFn := func() (string, error) {
-			return auth.GetToken(cfg.OAuth.ClientID, cfg.OAuth.ClientSecret)
+		authApplier, err := buildAuthApplier(cfg)
+		if err != nil {
+			return err
 		}
 
-		client := bitbucket.NewClient(tokenFn)
+		client := bitbucket.NewClient(authApplier)
 
 		fmt.Printf("Fetching repos from workspace %q...\n\n", cfg.Workspace)
 

@@ -12,31 +12,51 @@ import (
 
 const baseURL = "https://api.bitbucket.org/2.0"
 
-// TokenProvider is a function that returns a valid access token.
-type TokenProvider func() (string, error)
+// AuthApplier applies authentication to an HTTP request.
+type AuthApplier func(req *http.Request) error
+
+// BearerAuth returns an AuthApplier that uses OAuth Bearer tokens.
+func BearerAuth(tokenFn func() (string, error)) AuthApplier {
+	return func(req *http.Request) error {
+		token, err := tokenFn()
+		if err != nil {
+			return err
+		}
+		req.Header.Set("Authorization", "Bearer "+token)
+		return nil
+	}
+}
+
+// BasicAuth returns an AuthApplier that uses HTTP Basic authentication (for App Passwords).
+func BasicAuth(username, password string) AuthApplier {
+	return func(req *http.Request) error {
+		req.SetBasicAuth(username, password)
+		return nil
+	}
+}
 
 // Client wraps the Bitbucket Cloud REST API.
 type Client struct {
-	httpClient    *http.Client
-	tokenProvider TokenProvider
+	httpClient  *http.Client
+	authApplier AuthApplier
 }
 
 // NewClient creates a new Bitbucket API client.
-func NewClient(tokenProvider TokenProvider) *Client {
+func NewClient(authApplier AuthApplier) *Client {
 	return &Client{
 		httpClient: &http.Client{
 			Timeout: 30 * time.Second,
 		},
-		tokenProvider: tokenProvider,
+		authApplier: authApplier,
 	}
 }
 
 // NewClientWithHTTPClient creates a Bitbucket API client with a custom http.Client.
 // Intended for testing with httptest servers.
-func NewClientWithHTTPClient(httpClient *http.Client, tokenProvider TokenProvider) *Client {
+func NewClientWithHTTPClient(httpClient *http.Client, authApplier AuthApplier) *Client {
 	return &Client{
-		httpClient:    httpClient,
-		tokenProvider: tokenProvider,
+		httpClient:  httpClient,
+		authApplier: authApplier,
 	}
 }
 
@@ -85,11 +105,6 @@ func (c *Client) CreateBranch(workspace, repoSlug, branchName, sourceBranch stri
 
 // doRequest performs an authenticated HTTP request and decodes the JSON response.
 func (c *Client) doRequest(method, url string, body any, result any) error {
-	token, err := c.tokenProvider()
-	if err != nil {
-		return fmt.Errorf("auth error: %w", err)
-	}
-
 	var bodyReader io.Reader
 	if body != nil {
 		jsonData, err := json.Marshal(body)
@@ -104,7 +119,10 @@ func (c *Client) doRequest(method, url string, body any, result any) error {
 		return err
 	}
 
-	req.Header.Set("Authorization", "Bearer "+token)
+	if err := c.authApplier(req); err != nil {
+		return fmt.Errorf("auth error: %w", err)
+	}
+
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 

@@ -11,11 +11,15 @@ import (
 var loginCmd = &cobra.Command{
 	Use:   "login",
 	Short: "Authenticate with Bitbucket via OAuth 2.0",
-	Long:  "Opens your browser to authorize bbranch with your Bitbucket account.",
+	Long:  "Opens your browser to authorize bbranch with your Bitbucket account.\nNot needed when using app_password auth method.",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cfg, err := config.Load()
 		if err != nil {
 			return fmt.Errorf("failed to load config: %w", err)
+		}
+
+		if cfg.AuthMethod() == "api_token" {
+			return fmt.Errorf("login is not needed when using api_token auth method.\nAPI tokens authenticate directly via config credentials")
 		}
 
 		if cfg.OAuth.ClientID == "" || cfg.OAuth.ClientSecret == "" {

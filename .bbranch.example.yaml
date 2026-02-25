@@ -1,8 +1,22 @@
 workspace: my-workspace
 
-oauth:
-  client_id: ${BITBUCKET_OAUTH_CLIENT_ID}
-  client_secret: ${BITBUCKET_OAUTH_CLIENT_SECRET}
+# Auth method: "api_token" (default) or "oauth"
+# auth:
+#   method: api_token
+
+# Option 1: API Token (default, no login needed)
+# Create at: Bitbucket > Personal settings > Security > API tokens
+# Required scopes: read:repository:bitbucket, write:repository:bitbucket
+api_token:
+  email: ${BITBUCKET_EMAIL}
+  token: ${BITBUCKET_API_TOKEN}
+
+# Option 2: OAuth 2.0 + PKCE (requires 'bbranch login')
+# auth:
+#   method: oauth
+# oauth:
+#   client_id: ${BITBUCKET_OAUTH_CLIENT_ID}
+#   client_secret: ${BITBUCKET_OAUTH_CLIENT_SECRET}
 
 groups:
   backend:

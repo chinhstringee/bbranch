@@ -61,8 +61,8 @@ func newCreatorForServer(srv *httptest.Server) *BranchCreator {
 		srvHost: srv.Listener.Addr().String(),
 	}
 	httpClient := &http.Client{Transport: transport}
-	tp := func() (string, error) { return "test-token", nil }
-	client := bitbucket.NewClientWithHTTPClient(httpClient, tp)
+	authApplier := bitbucket.BearerAuth(func() (string, error) { return "test-token", nil })
+	client := bitbucket.NewClientWithHTTPClient(httpClient, authApplier)
 	return NewBranchCreator(client)
 }
 

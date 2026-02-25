@@ -10,10 +10,17 @@ import (
 
 // Config represents the .bbranch.yaml configuration.
 type Config struct {
-	Workspace string            `mapstructure:"workspace"`
-	OAuth     OAuthConfig       `mapstructure:"oauth"`
+	Workspace string              `mapstructure:"workspace"`
+	Auth      AuthConfig          `mapstructure:"auth"`
+	OAuth     OAuthConfig         `mapstructure:"oauth"`
+	ApiToken  ApiTokenConfig      `mapstructure:"api_token"`
 	Groups    map[string][]string `mapstructure:"groups"`
-	Defaults  Defaults          `mapstructure:"defaults"`
+	Defaults  Defaults            `mapstructure:"defaults"`
+}
+
+// AuthConfig holds the authentication method selection.
+type AuthConfig struct {
+	Method string `mapstructure:"method"` // "oauth" (default) or "api_token"
 }
 
 // OAuthConfig holds OAuth consumer credentials.
@@ -22,10 +29,24 @@ type OAuthConfig struct {
 	ClientSecret string `mapstructure:"client_secret"`
 }
 
+// ApiTokenConfig holds Bitbucket API token credentials.
+type ApiTokenConfig struct {
+	Email string `mapstructure:"email"`
+	Token string `mapstructure:"token"`
+}
+
 // Defaults holds default branch creation settings.
 type Defaults struct {
 	SourceBranch string `mapstructure:"source_branch"`
 	BranchPrefix string `mapstructure:"branch_prefix"`
+}
+
+// AuthMethod returns the configured auth method, defaulting to "api_token".
+func (c *Config) AuthMethod() string {
+	if c.Auth.Method == "" {
+		return "api_token"
+	}
+	return c.Auth.Method
 }
 
 var envVarPattern = regexp.MustCompile(`\$\{([^}]+)\}`)
@@ -48,6 +69,10 @@ func Load() (*Config, error) {
 	// Expand env vars in OAuth fields
 	cfg.OAuth.ClientID = expandEnvVars(cfg.OAuth.ClientID)
 	cfg.OAuth.ClientSecret = expandEnvVars(cfg.OAuth.ClientSecret)
+
+	// Expand env vars in API Token fields
+	cfg.ApiToken.Email = expandEnvVars(cfg.ApiToken.Email)
+	cfg.ApiToken.Token = expandEnvVars(cfg.ApiToken.Token)
 
 	// Set defaults
 	if cfg.Defaults.SourceBranch == "" {

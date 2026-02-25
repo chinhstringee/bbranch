@@ -12,18 +12,18 @@ import (
 // newTestClient returns a Client pointed at the given httptest.Server URL.
 // It replaces the package-level baseURL by overriding the URL in each method
 // via a server whose handler mirrors the real API shape.
-func mockTokenProvider(token string) TokenProvider {
-	return func() (string, error) { return token, nil }
+func mockAuthApplier(token string) AuthApplier {
+	return BearerAuth(func() (string, error) { return token, nil })
 }
 
-func errorTokenProvider() TokenProvider {
-	return func() (string, error) { return "", fmt.Errorf("auth failure") }
+func errorAuthApplier() AuthApplier {
+	return BearerAuth(func() (string, error) { return "", fmt.Errorf("auth failure") })
 }
 
 // ---------- NewClient ----------
 
 func TestNewClient_NotNil(t *testing.T) {
-	c := NewClient(mockTokenProvider("tok"))
+	c := NewClient(mockAuthApplier("tok"))
 	if c == nil {
 		t.Fatal("NewClient returned nil")
 	}
@@ -43,7 +43,7 @@ func TestDoRequest_AuthHeaderSet(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := NewClient(mockTokenProvider("my-access-token"))
+	c := NewClient(mockAuthApplier("my-access-token"))
 	var repo Repository
 	err := c.doRequest("GET", srv.URL, nil, &repo)
 	if err != nil {
@@ -54,8 +54,36 @@ func TestDoRequest_AuthHeaderSet(t *testing.T) {
 	}
 }
 
+func TestDoRequest_BasicAuth(t *testing.T) {
+	var gotUser, gotPass string
+	var gotAuth string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotUser, gotPass, _ = r.BasicAuth()
+		gotAuth = r.Header.Get("Authorization")
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(Repository{Slug: "test-repo"})
+	}))
+	defer srv.Close()
+
+	c := NewClient(BasicAuth("myuser", "myapppass"))
+	var repo Repository
+	err := c.doRequest("GET", srv.URL, nil, &repo)
+	if err != nil {
+		t.Fatalf("doRequest error: %v", err)
+	}
+	if gotUser != "myuser" {
+		t.Errorf("Basic auth user = %q, want %q", gotUser, "myuser")
+	}
+	if gotPass != "myapppass" {
+		t.Errorf("Basic auth pass = %q, want %q", gotPass, "myapppass")
+	}
+	if !strings.HasPrefix(gotAuth, "Basic ") {
+		t.Errorf("Authorization header = %q, want Basic prefix", gotAuth)
+	}
+}
+
 func TestDoRequest_TokenProviderError(t *testing.T) {
-	c := NewClient(errorTokenProvider())
+	c := NewClient(errorAuthApplier())
 	var result Repository
 	err := c.doRequest("GET", "http://localhost/ignored", nil, &result)
 	if err == nil {
@@ -75,7 +103,7 @@ func TestDoRequest_APIError_WithMessage(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := NewClient(mockTokenProvider("tok"))
+	c := NewClient(mockAuthApplier("tok"))
 	var result Repository
 	err := c.doRequest("GET", srv.URL, nil, &result)
 	if err == nil {
@@ -93,7 +121,7 @@ func TestDoRequest_APIError_PlainBody(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := NewClient(mockTokenProvider("tok"))
+	c := NewClient(mockAuthApplier("tok"))
 	var result Repository
 	err := c.doRequest("GET", srv.URL, nil, &result)
 	if err == nil {
@@ -111,7 +139,7 @@ func TestDoRequest_InvalidJSON_Response(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := NewClient(mockTokenProvider("tok"))
+	c := NewClient(mockAuthApplier("tok"))
 	var result Repository
 	err := c.doRequest("GET", srv.URL, nil, &result)
 	if err == nil {
@@ -136,7 +164,7 @@ func TestListRepositories_SinglePage(t *testing.T) {
 
 	c := &Client{
 		httpClient:    srv.Client(),
-		tokenProvider: mockTokenProvider("tok"),
+		authApplier: mockAuthApplier("tok"),
 	}
 
 	// Override the request URL by calling doRequest directly with the test server URL
@@ -174,7 +202,7 @@ func TestListRepositories_Pagination(t *testing.T) {
 	// go to srv.URL directly — testing doRequest + pagination loop independently.
 	c := &Client{
 		httpClient:    srv.Client(),
-		tokenProvider: mockTokenProvider("tok"),
+		authApplier: mockAuthApplier("tok"),
 	}
 
 	// Manually replicate the ListRepositories pagination loop against the test server
@@ -210,7 +238,7 @@ func TestGetRepository_Success(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := &Client{httpClient: srv.Client(), tokenProvider: mockTokenProvider("tok")}
+	c := &Client{httpClient: srv.Client(), authApplier: mockAuthApplier("tok")}
 	var repo Repository
 	err := c.doRequest("GET", srv.URL, nil, &repo)
 	if err != nil {
@@ -228,7 +256,7 @@ func TestGetRepository_NotFound(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := &Client{httpClient: srv.Client(), tokenProvider: mockTokenProvider("tok")}
+	c := &Client{httpClient: srv.Client(), authApplier: mockAuthApplier("tok")}
 	var repo Repository
 	err := c.doRequest("GET", srv.URL, nil, &repo)
 	if err == nil {
@@ -258,7 +286,7 @@ func TestCreateBranch_Success(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := &Client{httpClient: srv.Client(), tokenProvider: mockTokenProvider("tok")}
+	c := &Client{httpClient: srv.Client(), authApplier: mockAuthApplier("tok")}
 
 	var branch Branch
 	body := CreateBranchRequest{
@@ -286,7 +314,7 @@ func TestCreateBranch_Conflict(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := &Client{httpClient: srv.Client(), tokenProvider: mockTokenProvider("tok")}
+	c := &Client{httpClient: srv.Client(), authApplier: mockAuthApplier("tok")}
 	var branch Branch
 	err := c.doRequest("POST", srv.URL, CreateBranchRequest{Name: "existing"}, &branch)
 	if err == nil {
@@ -309,7 +337,7 @@ func TestDoRequest_Headers(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := &Client{httpClient: srv.Client(), tokenProvider: mockTokenProvider("tok")}
+	c := &Client{httpClient: srv.Client(), authApplier: mockAuthApplier("tok")}
 	err := c.doRequest("POST", srv.URL, map[string]string{"k": "v"}, &struct{}{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)

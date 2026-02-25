@@ -7,7 +7,6 @@ import (
 	"github.com/charmbracelet/huh"
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
-	"github.com/chinhstringee/bbranch/internal/auth"
 	"github.com/chinhstringee/bbranch/internal/bitbucket"
 	"github.com/chinhstringee/bbranch/internal/config"
 	"github.com/chinhstringee/bbranch/internal/creator"
@@ -51,12 +50,12 @@ func runCreate(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("workspace not configured in .bbranch.yaml")
 	}
 
-	// Build token provider
-	tokenFn := func() (string, error) {
-		return auth.GetToken(cfg.OAuth.ClientID, cfg.OAuth.ClientSecret)
+	authApplier, err := buildAuthApplier(cfg)
+	if err != nil {
+		return err
 	}
 
-	client := bitbucket.NewClient(tokenFn)
+	client := bitbucket.NewClient(authApplier)
 
 	// Resolve target repos
 	repos, err := resolveRepos(cfg, client)

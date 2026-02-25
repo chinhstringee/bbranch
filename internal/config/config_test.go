@@ -136,6 +136,48 @@ func TestGetReposForGroup_NotFound(t *testing.T) {
 	}
 }
 
+func TestAuthMethod_DefaultsToApiToken(t *testing.T) {
+	cfg := &Config{}
+	if cfg.AuthMethod() != "api_token" {
+		t.Errorf("AuthMethod() = %q, want %q", cfg.AuthMethod(), "api_token")
+	}
+}
+
+func TestAuthMethod_ApiToken(t *testing.T) {
+	cfg := &Config{Auth: AuthConfig{Method: "api_token"}}
+	if cfg.AuthMethod() != "api_token" {
+		t.Errorf("AuthMethod() = %q, want %q", cfg.AuthMethod(), "api_token")
+	}
+}
+
+func TestLoad_EnvVarExpansionInApiToken(t *testing.T) {
+	resetViper()
+
+	os.Setenv("BB_EMAIL", "user@example.com")
+	os.Setenv("BB_TOKEN", "my-api-token")
+	defer os.Unsetenv("BB_EMAIL")
+	defer os.Unsetenv("BB_TOKEN")
+
+	viper.Set("auth.method", "api_token")
+	viper.Set("api_token.email", "${BB_EMAIL}")
+	viper.Set("api_token.token", "${BB_TOKEN}")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error: %v", err)
+	}
+
+	if cfg.ApiToken.Email != "user@example.com" {
+		t.Errorf("Email = %q, want %q", cfg.ApiToken.Email, "user@example.com")
+	}
+	if cfg.ApiToken.Token != "my-api-token" {
+		t.Errorf("Token = %q, want %q", cfg.ApiToken.Token, "my-api-token")
+	}
+	if cfg.AuthMethod() != "api_token" {
+		t.Errorf("AuthMethod() = %q, want %q", cfg.AuthMethod(), "api_token")
+	}
+}
+
 func TestGetReposForGroup_EmptyGroups(t *testing.T) {
 	cfg := &Config{
 		Groups: map[string][]string{},
