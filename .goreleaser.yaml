@@ -5,6 +5,8 @@ builds:
     binary: bbranch
     env:
       - CGO_ENABLED=0
+    ldflags:
+      - -s -w -X github.com/chinhstringee/bbranch/cmd.Version={{.Version}}
     goos:
       - darwin
       - linux

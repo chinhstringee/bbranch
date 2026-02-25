@@ -8,12 +8,18 @@ import (
 	"github.com/spf13/viper"
 )
 
-var cfgFile string
+var (
+	cfgFile string
+
+	// Version is set via ldflags at build time.
+	Version = "dev"
+)
 
 var rootCmd = &cobra.Command{
-	Use:   "bbranch",
-	Short: "Create git branches across multiple Bitbucket repos",
-	Long:  "A CLI tool to create branches across multiple Bitbucket Cloud repositories simultaneously.",
+	Use:     "bbranch",
+	Short:   "Create git branches across multiple Bitbucket repos",
+	Long:    "A CLI tool to create branches across multiple Bitbucket Cloud repositories simultaneously.",
+	Version: Version,
 }
 
 // Execute runs the root command.
