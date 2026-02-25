@@ -15,7 +15,7 @@ builds:
 archives:
   - format: tar.gz
 
-brews:
+homebrew_casks:
   - repository:
       owner: chinhstringee
       name: homebrew-tap
@@ -23,8 +23,7 @@ brews:
     homepage: https://github.com/chinhstringee/bbranch
     description: CLI tool for creating Git branches across multiple Bitbucket repos
     license: MIT
-    install: |
-      bin.install "bbranch"
+    directory: Casks
 
 changelog:
   sort: asc
