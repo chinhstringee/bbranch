@@ -31,6 +31,15 @@ func NewClient(tokenProvider TokenProvider) *Client {
 	}
 }
 
+// NewClientWithHTTPClient creates a Bitbucket API client with a custom http.Client.
+// Intended for testing with httptest servers.
+func NewClientWithHTTPClient(httpClient *http.Client, tokenProvider TokenProvider) *Client {
+	return &Client{
+		httpClient:    httpClient,
+		tokenProvider: tokenProvider,
+	}
+}
+
 // ListRepositories returns all repos in a workspace (handles pagination).
 func (c *Client) ListRepositories(workspace string) ([]Repository, error) {
 	const maxPages = 50
