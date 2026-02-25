@@ -1,4 +1,4 @@
-module github.com/stringee/git-branch-creator
+module github.com/chinhstringee/bbranch
 
 go 1.25.0
 

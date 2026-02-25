@@ -1,6 +1,6 @@
 package main
 
-import "github.com/stringee/git-branch-creator/cmd"
+import "github.com/chinhstringee/bbranch/cmd"
 
 func main() {
 	cmd.Execute()

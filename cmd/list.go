@@ -5,9 +5,9 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
-	"github.com/stringee/git-branch-creator/internal/auth"
-	"github.com/stringee/git-branch-creator/internal/bitbucket"
-	"github.com/stringee/git-branch-creator/internal/config"
+	"github.com/chinhstringee/bbranch/internal/auth"
+	"github.com/chinhstringee/bbranch/internal/bitbucket"
+	"github.com/chinhstringee/bbranch/internal/config"
 )
 
 var listCmd = &cobra.Command{

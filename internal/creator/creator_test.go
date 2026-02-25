@@ -9,7 +9,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/stringee/git-branch-creator/internal/bitbucket"
+	"github.com/chinhstringee/bbranch/internal/bitbucket"
 )
 
 // mockBBServer builds an httptest.Server that handles branch creation requests.
