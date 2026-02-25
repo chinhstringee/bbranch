@@ -1,0 +1,74 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project
+
+**bbranch** — CLI tool for creating Git branches across multiple Bitbucket Cloud repositories simultaneously. Uses OAuth 2.0 with PKCE for authentication.
+
+- **Module**: `github.com/chinhstringee/bbranch`
+- **Go version**: 1.25.0
+
+## Commands
+
+```bash
+# Build
+go build -o bbranch
+
+# Run all tests (58 tests across 6 packages)
+go test ./...
+
+# Run single test
+go test -run TestFunctionName ./internal/auth/
+
+# Run with verbose output
+go test -v ./...
+
+# Run directly without building
+go run main.go <subcommand>
+```
+
+No Makefile or linter configuration exists. Standard `go vet` and `gofmt` apply.
+
+## Architecture
+
+```
+main.go → cmd.Execute()
+  │
+  cmd/          (Cobra CLI commands)
+  ├── root.go       Viper config init (.bbranch.yaml)
+  ├── login.go      OAuth login flow
+  ├── list.go       List workspace repos
+  └── create.go     Create branches across repos (core feature)
+  │
+  internal/     (Private packages)
+  ├── auth/         OAuth 2.0 + PKCE flow, token persistence (~/.bbranch/token.json)
+  ├── bitbucket/    REST API client + types (api.bitbucket.org/2.0)
+  ├── config/       YAML config loading with env var expansion (${VAR_NAME})
+  └── creator/      Parallel branch creation orchestrator (goroutines + sync)
+```
+
+**Key data flow for `create` command**: Config loading → Token retrieval (auto-refresh) → Repo resolution (flags/groups/interactive) → Concurrent branch creation → Colored result display.
+
+**Repo resolution order**: `--repos` flag > `--group` flag > interactive multi-select (charmbracelet/huh).
+
+## Config
+
+Config file: `.bbranch.yaml` (searched in cwd, then home dir). Real config is gitignored; `.bbranch.example.yaml` is the template. Supports `${ENV_VAR}` expansion for OAuth fields.
+
+Token stored at `~/.bbranch/token.json` with 0600 permissions.
+
+## Testing Patterns
+
+- `httptest.Server` for Bitbucket API mocking
+- `t.TempDir()` for file system isolation
+- `t.Setenv()` for env var isolation
+- Mock `TokenProvider func() (string, error)` for auth injection
+- Creator tests verify concurrency safety with stress tests (20 repos)
+
+## Dependencies
+
+- `spf13/cobra` — CLI framework
+- `spf13/viper` — Config management
+- `charmbracelet/huh` — Interactive TUI forms
+- `fatih/color` — Colored terminal output
