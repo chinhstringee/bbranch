@@ -14,14 +14,29 @@ CLI tool for creating Git branches across multiple Bitbucket Cloud repositories 
 
 ### Install
 
+**Homebrew** (macOS / Linux):
+
 ```bash
-# Homebrew (macOS/Linux)
 brew tap chinhstringee/tap
 brew install bbranch
+```
 
-# Or with Go
+**Go** (requires Go 1.25+):
+
+```bash
 go install github.com/chinhstringee/bbranch@latest
 ```
+
+**From source**:
+
+```bash
+git clone https://github.com/chinhstringee/bbranch.git
+cd bbranch
+go build -o bbranch
+sudo mv bbranch /usr/local/bin/
+```
+
+**Pre-built binaries**: Download from [GitHub Releases](https://github.com/chinhstringee/bbranch/releases), extract, and move to your `$PATH`.
 
 ### Prerequisites
 
