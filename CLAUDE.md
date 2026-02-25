@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-**bbranch** — CLI tool for creating Git branches across multiple Bitbucket Cloud repositories simultaneously. Uses OAuth 2.0 with PKCE for authentication.
+**bbranch** — CLI tool for creating Git branches across multiple Bitbucket Cloud repositories simultaneously. Supports API token (default) and OAuth 2.0 with PKCE authentication.
 
 - **Module**: `github.com/chinhstringee/bbranch`
 - **Go version**: 1.25.0
@@ -36,14 +36,15 @@ No Makefile or linter configuration exists. Standard `go vet` and `gofmt` apply.
 main.go → cmd.Execute()
   │
   cmd/          (Cobra CLI commands)
-  ├── root.go       Viper config init (.bbranch.yaml)
-  ├── login.go      OAuth login flow
-  ├── list.go       List workspace repos
-  └── create.go     Create branches across repos (core feature)
+  ├── root.go         Viper config init (.bbranch.yaml)
+  ├── auth_helper.go  Builds AuthApplier from config (API token or OAuth)
+  ├── login.go        OAuth login flow
+  ├── list.go         List workspace repos
+  └── create.go       Create branches across repos (core feature)
   │
   internal/     (Private packages)
   ├── auth/         OAuth 2.0 + PKCE flow, token persistence (~/.bbranch/token.json)
-  ├── bitbucket/    REST API client + types (api.bitbucket.org/2.0)
+  ├── bitbucket/    REST API client + types + AuthApplier (api.bitbucket.org/2.0)
   ├── config/       YAML config loading with env var expansion (${VAR_NAME})
   └── creator/      Parallel branch creation orchestrator (goroutines + sync)
 ```
@@ -54,16 +55,16 @@ main.go → cmd.Execute()
 
 ## Config
 
-Config file: `.bbranch.yaml` (searched in cwd, then home dir). Real config is gitignored; `.bbranch.example.yaml` is the template. Supports `${ENV_VAR}` expansion for OAuth fields.
+Config file: `.bbranch.yaml` (searched in cwd, then home dir). Real config is gitignored; `.bbranch.example.yaml` is the template. Supports `${ENV_VAR}` expansion for credential fields.
 
-Token stored at `~/.bbranch/token.json` with 0600 permissions.
+Auth methods: `api_token` (default, Basic auth) or `oauth` (Bearer token). OAuth token stored at `~/.bbranch/token.json` with 0600 permissions.
 
 ## Testing Patterns
 
 - `httptest.Server` for Bitbucket API mocking
 - `t.TempDir()` for file system isolation
 - `t.Setenv()` for env var isolation
-- Mock `TokenProvider func() (string, error)` for auth injection
+- Mock `AuthApplier func(req *http.Request) error` for auth injection
 - Creator tests verify concurrency safety with stress tests (20 repos)
 
 ## Dependencies

@@ -1,16 +1,41 @@
 # bbranch Usage Guide
 
-Create git branches across multiple Bitbucket Cloud repositories simultaneously using OAuth 2.0 authentication.
+Create git branches across multiple Bitbucket Cloud repositories simultaneously.
 
 ## Quick Start
 
 ### 1. Install Prerequisites
 
-- **Go 1.26 or later** — [Download Go](https://golang.org/dl/)
+- **Go 1.25 or later** — [Download Go](https://golang.org/dl/)
 - **Bitbucket Cloud workspace** — [Create one](https://bitbucket.org)
-- **OAuth consumer** — Configure in workspace settings
 
-### 2. Create OAuth Consumer
+### 2. Build and Configure
+
+```bash
+go build -o bbranch
+cp .bbranch.example.yaml .bbranch.yaml
+```
+
+### 3. Authentication Setup
+
+#### Option A: API Token (default, recommended)
+
+1. Go to [Bitbucket > Personal settings > Security > API tokens](https://bitbucket.org/account/settings/api-tokens/)
+2. Click "Create API token with scopes"
+3. Select scopes: `read:repository:bitbucket`, `write:repository:bitbucket`
+4. Copy the token (shown only once)
+
+```yaml
+workspace: your-workspace-slug
+
+api_token:
+  email: your-email@example.com
+  token: YOUR_API_TOKEN
+```
+
+No `bbranch login` needed — works immediately.
+
+#### Option B: OAuth 2.0 + PKCE
 
 1. Go to Bitbucket workspace → Settings → API → OAuth consumers
 2. Click "Add consumer"
@@ -20,25 +45,22 @@ Create git branches across multiple Bitbucket Cloud repositories simultaneously 
    - **Permissions**: Repositories (Read + Write)
 4. Save client ID and secret
 
-### 3. Build and Configure
-
-```bash
-# Build the tool
-go build -o bbranch
-
-# Create config file
-cp .bbranch.example.yaml .bbranch.yaml
-```
-
-Edit `.bbranch.yaml`:
-
 ```yaml
 workspace: your-workspace-slug
+
+auth:
+  method: oauth
 
 oauth:
   client_id: YOUR_CLIENT_ID
   client_secret: YOUR_CLIENT_SECRET
+```
 
+Then run `bbranch login` to authenticate via browser.
+
+### 4. Add Groups (optional)
+
+```yaml
 groups:
   backend:
     - api-repo
@@ -51,19 +73,11 @@ defaults:
   branch_prefix: "feature/"
 ```
 
-### 4. Authenticate
-
-```bash
-bbranch login
-```
-
-Opens your browser to authorize. Token saved to `~/.bbranch/token.json`.
-
 ## Commands
 
 ### `bbranch login`
 
-Authenticate with Bitbucket via OAuth 2.0 browser flow.
+Authenticate with Bitbucket via OAuth 2.0 browser flow. Only needed when using `auth.method: oauth`.
 
 ```bash
 bbranch login
@@ -74,7 +88,7 @@ bbranch login
 - Stores token in `~/.bbranch/token.json`
 - Token reused for all subsequent commands
 
-**Note**: Run when token expires or you need to switch accounts.
+**Note**: Not needed for API token auth. Run when token expires or you need to switch accounts.
 
 ---
 
@@ -201,17 +215,24 @@ bbranch looks for `.bbranch.yaml` in this order:
 ```yaml
 workspace: my-workspace              # Required: Bitbucket workspace slug
 
+# Auth method: "api_token" (default) or "oauth"
+auth:
+  method: api_token                  # Optional: defaults to api_token
+
+# For API token auth
+api_token:
+  email: user@example.com            # Atlassian account email
+  token: YOUR_API_TOKEN              # API token with repo scopes
+
+# For OAuth auth
 oauth:
-  client_id: YOUR_CLIENT_ID           # Required: OAuth consumer ID
-  client_secret: YOUR_CLIENT_SECRET   # Required: OAuth consumer secret
+  client_id: YOUR_CLIENT_ID
+  client_secret: YOUR_CLIENT_SECRET
 
 groups:                               # Optional: Named repo groups
   backend:
     - api-repo
     - worker-repo
-  frontend:
-    - web-repo
-    - mobile-repo
 
 defaults:
   source_branch: master               # Optional: Default source branch
@@ -220,11 +241,12 @@ defaults:
 
 ### Environment Variables
 
-Override config values using environment variables:
+All credential fields support `${ENV_VAR}` expansion:
 
 ```bash
-BITBUCKET_OAUTH_CLIENT_ID=xxx bbranch list
-BITBUCKET_OAUTH_CLIENT_SECRET=yyy bbranch create feature/x
+export BITBUCKET_EMAIL=user@example.com
+export BITBUCKET_API_TOKEN=your-token
+bbranch list
 ```
 
 ---
@@ -282,25 +304,20 @@ Find your workspace slug in Bitbucket URL: `bitbucket.org/{workspace-slug}`
 
 ---
 
-### "OAuth credentials not configured"
+### "api_token credentials not configured"
 
-**Problem**: Login fails with credentials error.
+**Problem**: Commands fail with credentials error.
 
-**Solution**: Set OAuth credentials in `.bbranch.yaml`:
+**Solution**: Set API token in `.bbranch.yaml`:
 
 ```yaml
-oauth:
-  client_id: YOUR_CLIENT_ID
-  client_secret: YOUR_CLIENT_SECRET
+api_token:
+  email: your-email@example.com
+  token: YOUR_API_TOKEN
 ```
 
-Or use environment variables:
-
-```bash
-export BITBUCKET_OAUTH_CLIENT_ID=xxx
-export BITBUCKET_OAUTH_CLIENT_SECRET=yyy
-bbranch login
-```
+Create an API token at: Bitbucket > Personal settings > Security > API tokens.
+Required scopes: `read:repository:bitbucket`, `write:repository:bitbucket`.
 
 ---
 
@@ -310,9 +327,8 @@ bbranch login
 
 **Solutions**:
 1. Verify workspace slug: `bbranch list`
-2. Check OAuth permissions: Consumer needs Repositories (Read + Write)
-3. Re-authenticate: `bbranch login`
-4. Verify OAuth consumer callback URL is `http://localhost:9876/callback`
+2. Check API token scopes: needs `read:repository:bitbucket` + `write:repository:bitbucket`
+3. If using OAuth: re-authenticate with `bbranch login`
 
 ---
 
@@ -347,10 +363,10 @@ bbranch login
 
 ## Security Notes
 
-- **Token storage**: `~/.bbranch/token.json` is readable by your user account only
+- **Token storage**: `~/.bbranch/token.json` (OAuth only) is readable by your user account only
 - **Credentials**: Never commit `.bbranch.yaml` with real credentials to git
-- **Environment**: Use environment variables in CI/CD pipelines instead of config files
-- **OAuth scope**: Consumer only has Repositories (Read + Write) access—no admin rights
+- **Environment**: Use `${ENV_VAR}` expansion or environment variables in CI/CD pipelines
+- **API token scope**: Use minimal scopes — only `read:repository` + `write:repository`
 
 ---
 

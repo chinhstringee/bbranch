@@ -5,7 +5,7 @@ CLI tool for creating Git branches across multiple Bitbucket Cloud repositories 
 ## Features
 
 - **Multi-repo branch creation** — Create the same branch across many repos in parallel
-- **OAuth 2.0 with PKCE** — Secure browser-based authentication
+- **API token & OAuth 2.0** — Supports Bitbucket API tokens (default) and OAuth with PKCE
 - **Repository groups** — Define named groups in config for quick targeting
 - **Interactive selection** — Pick repos from a TUI multi-select when no flags given
 - **Dry run** — Preview what would happen without making changes
@@ -38,10 +38,6 @@ sudo mv bbranch /usr/local/bin/
 
 **Pre-built binaries**: Download from [GitHub Releases](https://github.com/chinhstringee/bbranch/releases), extract, and move to your `$PATH`.
 
-### Prerequisites
-
-- A [Bitbucket OAuth consumer](https://support.atlassian.com/bitbucket-cloud/docs/use-oauth-on-bitbucket-cloud/) with callback URL `http://localhost:9876/callback`
-
 ### Configure
 
 Copy the example config and fill in your details:
@@ -50,34 +46,39 @@ Copy the example config and fill in your details:
 cp .bbranch.example.yaml .bbranch.yaml
 ```
 
+#### Option 1: API Token (default, recommended)
+
+Create an API token at [Bitbucket > Personal settings > Security > API tokens](https://bitbucket.org/account/settings/api-tokens/).
+Required scopes: `read:repository:bitbucket`, `write:repository:bitbucket`.
+
 ```yaml
 workspace: my-workspace
+
+api_token:
+  email: your-email@example.com
+  token: ${BITBUCKET_API_TOKEN}
+```
+
+No `bbranch login` needed — works immediately.
+
+#### Option 2: OAuth 2.0
+
+Requires a [Bitbucket OAuth consumer](https://support.atlassian.com/bitbucket-cloud/docs/use-oauth-on-bitbucket-cloud/) with callback URL `http://localhost:9876/callback`.
+
+```yaml
+workspace: my-workspace
+
+auth:
+  method: oauth
 
 oauth:
   client_id: ${BITBUCKET_OAUTH_CLIENT_ID}
   client_secret: ${BITBUCKET_OAUTH_CLIENT_SECRET}
-
-groups:
-  backend:
-    - repo-api
-    - repo-worker
-  frontend:
-    - repo-web
-    - repo-mobile
-
-defaults:
-  source_branch: master
 ```
 
-OAuth fields support `${ENV_VAR}` expansion.
+Then authenticate: `bbranch login`
 
-### Authenticate
-
-```bash
-bbranch login
-```
-
-Opens your browser for OAuth authorization. Token is saved to `~/.bbranch/token.json`.
+All credential fields support `${ENV_VAR}` expansion.
 
 ## Usage
 
