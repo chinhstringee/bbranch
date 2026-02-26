@@ -29,7 +29,7 @@ func init() {
 	prCmd.Flags().StringVarP(&prFlagGroup, "group", "g", "", "repo group from config")
 	prCmd.Flags().StringVarP(&prFlagRepos, "repos", "r", "", "comma-separated repo slugs")
 	prCmd.Flags().BoolVar(&prFlagDryRun, "dry-run", false, "preview actions without executing")
-	prCmd.Flags().StringVarP(&prFlagDestination, "destination", "d", "", "destination branch (default: repo's main branch)")
+	prCmd.Flags().StringVarP(&prFlagDestination, "destination", "d", "", "destination branch (default: master)")
 	prCmd.Flags().BoolVarP(&prFlagInteractive, "interactive", "i", false, "select repos interactively")
 
 	rootCmd.AddCommand(prCmd)
@@ -68,9 +68,9 @@ func runPR(cmd *cobra.Command, args []string) error {
 	if prFlagDryRun {
 		dest := prFlagDestination
 		if dest == "" {
-			dest = "(each repo's default branch)"
+			dest = "master"
 		}
-		bold.Printf("Dry run: would create PRs from %q to %s in:\n", branchName, dest)
+		bold.Printf("Dry run: would create PRs from %q to %q in:\n", branchName, dest)
 		for _, r := range repos {
 			fmt.Printf("  - %s\n", r)
 		}

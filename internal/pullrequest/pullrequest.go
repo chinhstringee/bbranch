@@ -26,13 +26,15 @@ type PRCreator struct {
 	client *bitbucket.Client
 }
 
+const defaultDestinationBranch = "master"
+
 // NewPRCreator creates a new PR orchestrator.
 func NewPRCreator(client *bitbucket.Client) *PRCreator {
 	return &PRCreator{client: client}
 }
 
 // CreatePRs creates pull requests in multiple repos concurrently.
-// If destination is empty, each repo's main branch is resolved via the API.
+// If destination is empty, "master" is used.
 func (pc *PRCreator) CreatePRs(workspace string, repos []string, branchName, destination string) []Result {
 	var (
 		wg      sync.WaitGroup
@@ -45,23 +47,9 @@ func (pc *PRCreator) CreatePRs(workspace string, repos []string, branchName, des
 		go func(repoSlug string) {
 			defer wg.Done()
 
-			dest := destination
+			dest := strings.TrimSpace(destination)
 			if dest == "" {
-				repo, err := pc.client.GetRepository(workspace, repoSlug)
-				if err != nil {
-					mu.Lock()
-					results = append(results, Result{
-						RepoSlug: repoSlug,
-						Error:    err.Error(),
-					})
-					mu.Unlock()
-					return
-				}
-				if repo.MainBranch != nil {
-					dest = repo.MainBranch.Name
-				} else {
-					dest = "main"
-				}
+				dest = defaultDestinationBranch
 			}
 
 			// Build description from commits (fallback to static text on error)

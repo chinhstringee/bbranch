@@ -13,11 +13,11 @@ import (
 )
 
 // mockPRServer builds an httptest.Server that handles:
-// - GET  /2.0/repositories/{ws}/{slug}             → Repository (for mainbranch resolution)
+// - GET  /2.0/repositories/{ws}/{slug}             → Repository
 // - GET  /2.0/repositories/{ws}/{slug}/commits     → PaginatedCommits (for description)
 // - POST /2.0/repositories/{ws}/{slug}/pullrequests → PullRequest or error
 //
-// repoMainBranch maps repoSlug → main branch name.
+// repoMainBranch maps repoSlug → main branch name (used if GET repo is requested).
 // prResponses maps repoSlug → PullRequest to return (status 201).
 // prErrors maps repoSlug → API error message (status 409).
 func mockPRServer(t *testing.T, repoMainBranch map[string]string, prResponses map[string]bitbucket.PullRequest, prErrors map[string]string) *httptest.Server {
@@ -289,9 +289,9 @@ func TestCreatePRs_Concurrency(t *testing.T) {
 	if len(results) != 20 {
 		t.Errorf("len(results) = %d, want 20", len(results))
 	}
-	// Each repo makes 3 requests: GET repo + GET commits + POST PR = 60 total
-	if int(requestCount.Load()) != 60 {
-		t.Errorf("HTTP request count = %d, want 60", requestCount.Load())
+	// Each repo makes 2 requests: GET commits + POST PR = 40 total
+	if int(requestCount.Load()) != 40 {
+		t.Errorf("HTTP request count = %d, want 40", requestCount.Load())
 	}
 }
 
@@ -339,8 +339,9 @@ func TestCreatePRs_DestinationOverride(t *testing.T) {
 	}
 }
 
-func TestCreatePRs_DefaultBranchResolution(t *testing.T) {
+func TestCreatePRs_DefaultDestinationMaster(t *testing.T) {
 	var getRepoCalled atomic.Int64
+	var gotBody bitbucket.CreatePullRequestRequest
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -359,6 +360,7 @@ func TestCreatePRs_DefaultBranchResolution(t *testing.T) {
 			return
 		}
 
+		json.NewDecoder(r.Body).Decode(&gotBody)
 		w.WriteHeader(http.StatusCreated)
 		json.NewEncoder(w).Encode(bitbucket.PullRequest{
 			ID:    1,
@@ -376,14 +378,16 @@ func TestCreatePRs_DefaultBranchResolution(t *testing.T) {
 	if !results[0].Success {
 		t.Errorf("expected success, got error: %s", results[0].Error)
 	}
-	// When no destination, GetRepository must be called to resolve mainbranch
-	if getRepoCalled.Load() != 1 {
-		t.Errorf("GetRepository called %d times, want 1", getRepoCalled.Load())
+	if gotBody.Destination.Branch.Name != "master" {
+		t.Errorf("destination = %q, want %q (default destination)", gotBody.Destination.Branch.Name, "master")
+	}
+	// When no destination, repository details should not be requested
+	if getRepoCalled.Load() != 0 {
+		t.Errorf("GetRepository called %d times, want 0", getRepoCalled.Load())
 	}
 }
 
-func TestCreatePRs_NilMainBranch(t *testing.T) {
-	// Repo returns nil MainBranch — should default to "main"
+func TestCreatePRs_EmptyDestinationWhitespaceUsesMaster(t *testing.T) {
 	var gotBody bitbucket.CreatePullRequestRequest
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -395,8 +399,7 @@ func TestCreatePRs_NilMainBranch(t *testing.T) {
 				json.NewEncoder(w).Encode(bitbucket.PaginatedCommits{})
 				return
 			}
-			// Return repo with nil MainBranch
-			json.NewEncoder(w).Encode(bitbucket.Repository{Slug: "test"})
+			w.WriteHeader(http.StatusNotFound)
 			return
 		}
 
@@ -410,7 +413,7 @@ func TestCreatePRs_NilMainBranch(t *testing.T) {
 	defer srv.Close()
 
 	pc := newPRCreatorForServer(srv)
-	results := pc.CreatePRs("ws", []string{"test-repo"}, "feature/x", "")
+	results := pc.CreatePRs("ws", []string{"test-repo"}, "feature/x", "   ")
 
 	if len(results) != 1 {
 		t.Fatalf("len(results) = %d, want 1", len(results))
@@ -418,8 +421,8 @@ func TestCreatePRs_NilMainBranch(t *testing.T) {
 	if !results[0].Success {
 		t.Errorf("expected success, got error: %s", results[0].Error)
 	}
-	if gotBody.Destination.Branch.Name != "main" {
-		t.Errorf("destination = %q, want %q (fallback for nil mainbranch)", gotBody.Destination.Branch.Name, "main")
+	if gotBody.Destination.Branch.Name != "master" {
+		t.Errorf("destination = %q, want %q (whitespace destination fallback)", gotBody.Destination.Branch.Name, "master")
 	}
 }
 

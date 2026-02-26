@@ -202,7 +202,7 @@ bbranch create feature/x --config /path/to/.bbranch.yaml
 
 ### `bbranch pr <branch-name>`
 
-Create pull requests across selected repositories from a specific branch to main/default branch.
+Create pull requests across selected repositories from a specific branch to `master` (or a custom destination).
 
 ```bash
 bbranch pr feature/auth
@@ -217,7 +217,7 @@ bbranch pr feature/auth
 | `--group` | `-g` | Use predefined repo group from config |
 | `--repos` | `-r` | Comma-separated repo slugs |
 | `--source` | `-s` | Source branch (defaults to target branch name) |
-| `--destination` | `-d` | Destination branch (defaults to main/default per repo) |
+| `--destination` | `-d` | Destination branch (defaults to `master`) |
 | `--dry-run` | | Preview without creating |
 | `--interactive` | `-i` | Force interactive selection |
 | `--config` | | Custom config file path |
@@ -230,7 +230,7 @@ bbranch pr feature/auth
 bbranch pr feature/auth
 ```
 
-Creates PRs from `feature/auth` to each repo's main branch.
+Creates PRs from `feature/auth` to `master`.
 
 **Using a group from config:**
 
@@ -259,10 +259,10 @@ bbranch pr feature/test --dry-run
 Output:
 
 ```
-Dry run: would create PR from "feature/test" to main/default branch in:
-  - api-repo (main)
-  - web-repo (master)
-  - worker-repo (main)
+Dry run: would create PR from "feature/test" to "master" in:
+  - api-repo
+  - web-repo
+  - worker-repo
 ```
 
 **Force interactive selection:**
@@ -372,7 +372,7 @@ bbranch pr feature/auth --repos api-repo,web-repo,worker-repo
 ### Workflow 5: Create PR with custom destination
 
 ```bash
-# PR from feature branch to develop (not main)
+# PR from feature branch to develop (not master)
 bbranch pr feature/newfeature --destination develop --repos api-repo,web-repo
 ```
 
