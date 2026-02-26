@@ -75,7 +75,11 @@ func runSetup(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("setup cancelled")
 	}
 
-	configPath := ".bbranch.yaml"
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return fmt.Errorf("failed to determine home directory: %w", err)
+	}
+	configPath := home + "/.bbranch.yaml"
 
 	// Check if config already exists
 	if _, err := os.Stat(configPath); err == nil {
@@ -83,7 +87,7 @@ func runSetup(cmd *cobra.Command, args []string) error {
 		confirm := huh.NewForm(
 			huh.NewGroup(
 				huh.NewConfirm().
-					Title(".bbranch.yaml already exists. Overwrite?").
+					Title(configPath + " already exists. Overwrite?").
 					Value(&overwrite),
 			),
 		)
@@ -124,7 +128,7 @@ func runSetup(cmd *cobra.Command, args []string) error {
 	bold := color.New(color.Bold)
 	green := color.New(color.FgGreen, color.Bold)
 
-	green.Println("✓ Configuration saved to .bbranch.yaml")
+	green.Println("✓ Configuration saved to " + configPath)
 	fmt.Println()
 	bold.Println("Next steps:")
 	fmt.Println("  bbranch list              — list workspace repos")
