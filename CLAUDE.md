@@ -30,6 +30,40 @@ go run main.go <subcommand>
 
 No Makefile or linter configuration exists. Standard `go vet` and `gofmt` apply.
 
+## CLI Usage
+
+```bash
+# Create branches across repos
+bbranch create <branch-name> --repos repo-a,repo-b --from main
+bbranch create <branch-name> --group backend
+bbranch create <branch-name> --dry-run
+
+# Create pull requests across repos
+bbranch pr <branch-name> --repos repo-a,repo-b
+bbranch pr <branch-name> --group backend --destination develop
+bbranch pr <branch-name> --dry-run
+
+# Common flags for both create and pr
+#   -r, --repos       comma-separated repo slugs (supports fuzzy match)
+#   -g, --group       repo group from .bbranch.yaml config
+#   -i, --interactive  force interactive repo selection
+#       --dry-run      preview without executing
+
+# Other commands
+bbranch list          # List workspace repos
+bbranch login         # OAuth login flow
+bbranch setup         # Interactive API token setup
+```
+
+## Release
+
+Tag-based via GoReleaser. To release a new version:
+```bash
+git tag v0.X.0 && git push origin v0.X.0
+# GitHub Actions runs GoReleaser → builds binaries + updates Homebrew tap
+# Users upgrade: brew upgrade bbranch
+```
+
 ## Architecture
 
 ```
