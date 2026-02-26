@@ -7,6 +7,7 @@ import (
 	"github.com/charmbracelet/huh"
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
+	"go.yaml.in/yaml/v3"
 )
 
 var setupCmd = &cobra.Command{
@@ -18,6 +19,22 @@ var setupCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(setupCmd)
+}
+
+// setupConfig represents the YAML structure written by the setup command.
+type setupConfig struct {
+	Workspace string        `yaml:"workspace"`
+	ApiToken  setupApiToken `yaml:"api_token"`
+	Defaults  setupDefaults `yaml:"defaults"`
+}
+
+type setupApiToken struct {
+	Email string `yaml:"email"`
+	Token string `yaml:"token"`
+}
+
+type setupDefaults struct {
+	SourceBranch string `yaml:"source_branch"`
 }
 
 func runSetup(cmd *cobra.Command, args []string) error {
@@ -84,18 +101,23 @@ func runSetup(cmd *cobra.Command, args []string) error {
 		sourceBranch = "master"
 	}
 
-	// Use %q to safely quote values that may contain YAML special characters
-	content := fmt.Sprintf(`workspace: %q
+	cfg := setupConfig{
+		Workspace: workspace,
+		ApiToken: setupApiToken{
+			Email: email,
+			Token: token,
+		},
+		Defaults: setupDefaults{
+			SourceBranch: sourceBranch,
+		},
+	}
 
-api_token:
-  email: %q
-  token: %q
+	content, err := yaml.Marshal(&cfg)
+	if err != nil {
+		return fmt.Errorf("failed to generate config: %w", err)
+	}
 
-defaults:
-  source_branch: %q
-`, workspace, email, token, sourceBranch)
-
-	if err := os.WriteFile(configPath, []byte(content), 0600); err != nil {
+	if err := os.WriteFile(configPath, content, 0600); err != nil {
 		return fmt.Errorf("failed to write config: %w", err)
 	}
 
