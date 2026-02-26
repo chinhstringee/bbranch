@@ -162,8 +162,9 @@ func TestAPIError_JSONDeserialization(t *testing.T) {
 	if apiErr.Error.Message != "Resource not found" {
 		t.Errorf("Error.Message = %q, want %q", apiErr.Error.Message, "Resource not found")
 	}
-	if apiErr.Error.Detail != "The repository does not exist" {
-		t.Errorf("Error.Detail = %q, want %q", apiErr.Error.Detail, "The repository does not exist")
+	wantDetail := `"The repository does not exist"`
+	if string(apiErr.Error.Detail) != wantDetail {
+		t.Errorf("Error.Detail = %s, want %s", string(apiErr.Error.Detail), wantDetail)
 	}
 }
 

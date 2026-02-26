@@ -200,6 +200,79 @@ bbranch create feature/x --config /path/to/.bbranch.yaml
 
 ---
 
+### `bbranch pr <branch-name>`
+
+Create pull requests across selected repositories from a specific branch to main/default branch.
+
+```bash
+bbranch pr feature/auth
+```
+
+**By default**, prompts interactive multi-select of repos. Navigate with arrow keys, toggle with space, confirm with enter.
+
+#### Options
+
+| Flag | Short | Description |
+|------|-------|-------------|
+| `--group` | `-g` | Use predefined repo group from config |
+| `--repos` | `-r` | Comma-separated repo slugs |
+| `--source` | `-s` | Source branch (defaults to target branch name) |
+| `--destination` | `-d` | Destination branch (defaults to main/default per repo) |
+| `--dry-run` | | Preview without creating |
+| `--interactive` | `-i` | Force interactive selection |
+| `--config` | | Custom config file path |
+
+#### Examples
+
+**Interactive mode (default):**
+
+```bash
+bbranch pr feature/auth
+```
+
+Creates PRs from `feature/auth` to each repo's main branch.
+
+**Using a group from config:**
+
+```bash
+bbranch pr feature/auth --group backend
+```
+
+**Specific repositories:**
+
+```bash
+bbranch pr feature/cors --repos api-repo,web-repo
+```
+
+**Custom destination branch:**
+
+```bash
+bbranch pr feature/hotfix --destination develop --repos api-repo,worker-repo
+```
+
+**Preview without creating:**
+
+```bash
+bbranch pr feature/test --dry-run
+```
+
+Output:
+
+```
+Dry run: would create PR from "feature/test" to main/default branch in:
+  - api-repo (main)
+  - web-repo (master)
+  - worker-repo (main)
+```
+
+**Force interactive selection:**
+
+```bash
+bbranch pr feature/auth --interactive
+```
+
+---
+
 ## Configuration
 
 ### File Locations
@@ -280,7 +353,30 @@ bbranch create feature/risky-change --dry-run
 bbranch create feature/risky-change
 ```
 
-### Workflow 4: Verify workspace setup
+### Workflow 4: Create pull requests across repos
+
+```bash
+# Create branches first
+bbranch create feature/auth --group backend
+
+# Then create PRs from those branches
+bbranch pr feature/auth --group backend
+```
+
+Or in one group:
+
+```bash
+bbranch pr feature/auth --repos api-repo,web-repo,worker-repo
+```
+
+### Workflow 5: Create PR with custom destination
+
+```bash
+# PR from feature branch to develop (not main)
+bbranch pr feature/newfeature --destination develop --repos api-repo,web-repo
+```
+
+### Workflow 6: Verify workspace setup
 
 ```bash
 bbranch list
@@ -379,6 +475,11 @@ Required scopes: `read:repository:bitbucket`, `write:repository:bitbucket`.
 | Create (interactive) | `bbranch create feature/auth` |
 | Create (group) | `bbranch create feature/auth --group backend` |
 | Create (specific repos) | `bbranch create feature/auth --repos api-repo,web-repo` |
-| From different branch | `bbranch create release/v1 --from develop` |
-| Preview | `bbranch create feature/test --dry-run` |
+| Create from different branch | `bbranch create release/v1 --from develop` |
+| Create (preview) | `bbranch create feature/test --dry-run` |
+| PR (interactive) | `bbranch pr feature/auth` |
+| PR (group) | `bbranch pr feature/auth --group backend` |
+| PR (specific repos) | `bbranch pr feature/auth --repos api-repo,web-repo` |
+| PR (custom destination) | `bbranch pr feature/auth --destination develop` |
+| PR (preview) | `bbranch pr feature/test --dry-run` |
 | Custom config | `bbranch list --config ~/.bbranch-prod.yaml` |

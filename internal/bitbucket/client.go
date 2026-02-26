@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 )
 
@@ -103,6 +104,30 @@ func (c *Client) CreateBranch(workspace, repoSlug, branchName, sourceBranch stri
 	return &branch, nil
 }
 
+// CreatePullRequest creates a pull request in a repository.
+func (c *Client) CreatePullRequest(workspace, repoSlug string, pr CreatePullRequestRequest) (*PullRequest, error) {
+	url := fmt.Sprintf("%s/repositories/%s/%s/pullrequests", baseURL, url.PathEscape(workspace), url.PathEscape(repoSlug))
+
+	var result PullRequest
+	if err := c.doRequest("POST", url, pr, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+// ListCommits returns commits reachable from include but not from exclude.
+func (c *Client) ListCommits(workspace, repoSlug, include, exclude string) ([]Commit, error) {
+	reqURL := fmt.Sprintf("%s/repositories/%s/%s/commits?include=%s&exclude=%s",
+		baseURL, url.PathEscape(workspace), url.PathEscape(repoSlug),
+		url.QueryEscape(include), url.QueryEscape(exclude))
+
+	var page PaginatedCommits
+	if err := c.doRequest("GET", reqURL, nil, &page); err != nil {
+		return nil, fmt.Errorf("failed to list commits: %w", err)
+	}
+	return page.Values, nil
+}
+
 // doRequest performs an authenticated HTTP request and decodes the JSON response.
 func (c *Client) doRequest(method, url string, body any, result any) error {
 	var bodyReader io.Reader
@@ -138,7 +163,7 @@ func (c *Client) doRequest(method, url string, body any, result any) error {
 
 		var apiErr APIError
 		if json.Unmarshal(respBody, &apiErr) == nil && apiErr.Error.Message != "" {
-			return fmt.Errorf("API error (%d): %s", resp.StatusCode, apiErr.Error.Message)
+			return formatAPIError(resp.StatusCode, apiErr)
 		}
 		return fmt.Errorf("API error (%d): %s", resp.StatusCode, string(respBody))
 	}
@@ -150,4 +175,27 @@ func (c *Client) doRequest(method, url string, body any, result any) error {
 	}
 
 	return nil
+}
+
+// formatAPIError creates a user-friendly error message from a Bitbucket API error.
+func formatAPIError(statusCode int, apiErr APIError) error {
+	msg := apiErr.Error.Message
+
+	// Try to parse permission scope details from the detail field
+	if apiErr.Error.Detail != nil {
+		var scope ScopeDetail
+		if json.Unmarshal(apiErr.Error.Detail, &scope) == nil && len(scope.Required) > 0 {
+			msg += "\n  Required scopes: " + strings.Join(scope.Required, ", ")
+			msg += "\n  Granted scopes:  " + strings.Join(scope.Granted, ", ")
+			return fmt.Errorf("API error (%d): %s", statusCode, msg)
+		}
+
+		// Detail might be a plain string
+		var detail string
+		if json.Unmarshal(apiErr.Error.Detail, &detail) == nil && detail != "" {
+			msg += ": " + detail
+		}
+	}
+
+	return fmt.Errorf("API error (%d): %s", statusCode, msg)
 }

@@ -325,6 +325,104 @@ func TestCreateBranch_Conflict(t *testing.T) {
 	}
 }
 
+// ---------- CreatePullRequest ----------
+
+func TestCreatePullRequest_Success(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Errorf("method = %q, want POST", r.Method)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		json.NewEncoder(w).Encode(PullRequest{
+			ID:    42,
+			Title: "feature/add-auth",
+			State: "OPEN",
+			Links: PRLinks{HTML: LinkRef{Href: "https://bitbucket.org/ws/repo/pull-requests/42"}},
+		})
+	}))
+	defer srv.Close()
+
+	c := &Client{httpClient: srv.Client(), authApplier: mockAuthApplier("tok")}
+	var pr PullRequest
+	body := CreatePullRequestRequest{
+		Title:       "feature/add-auth",
+		Description: "Automated PR",
+		Source:      PRBranchRef{Branch: PRBranchName{Name: "feature/add-auth"}},
+		Destination: PRBranchRef{Branch: PRBranchName{Name: "main"}},
+	}
+	err := c.doRequest("POST", srv.URL, body, &pr)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if pr.ID != 42 {
+		t.Errorf("pr.ID = %d, want 42", pr.ID)
+	}
+	if pr.Title != "feature/add-auth" {
+		t.Errorf("pr.Title = %q, want %q", pr.Title, "feature/add-auth")
+	}
+	if pr.Links.HTML.Href != "https://bitbucket.org/ws/repo/pull-requests/42" {
+		t.Errorf("pr.Links.HTML.Href = %q, want expected URL", pr.Links.HTML.Href)
+	}
+}
+
+func TestCreatePullRequest_Conflict(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusConflict)
+		json.NewEncoder(w).Encode(APIError{
+			Error: APIErrorDetail{Message: "There is already an open pull request"},
+		})
+	}))
+	defer srv.Close()
+
+	c := &Client{httpClient: srv.Client(), authApplier: mockAuthApplier("tok")}
+	var pr PullRequest
+	err := c.doRequest("POST", srv.URL, CreatePullRequestRequest{Title: "dup"}, &pr)
+	if err == nil {
+		t.Fatal("expected conflict error, got nil")
+	}
+	if !strings.Contains(err.Error(), "There is already an open pull request") {
+		t.Errorf("error %q does not mention PR conflict", err.Error())
+	}
+}
+
+func TestCreatePullRequest_RequestBody(t *testing.T) {
+	var gotBody CreatePullRequestRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		json.NewEncoder(w).Encode(PullRequest{ID: 1})
+	}))
+	defer srv.Close()
+
+	c := &Client{httpClient: srv.Client(), authApplier: mockAuthApplier("tok")}
+	body := CreatePullRequestRequest{
+		Title:             "feature/x",
+		Description:       "desc",
+		Source:            PRBranchRef{Branch: PRBranchName{Name: "feature/x"}},
+		Destination:       PRBranchRef{Branch: PRBranchName{Name: "develop"}},
+		CloseSourceBranch: true,
+	}
+	var pr PullRequest
+	err := c.doRequest("POST", srv.URL, body, &pr)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if gotBody.Title != "feature/x" {
+		t.Errorf("body.Title = %q, want %q", gotBody.Title, "feature/x")
+	}
+	if gotBody.Source.Branch.Name != "feature/x" {
+		t.Errorf("body.Source.Branch.Name = %q, want %q", gotBody.Source.Branch.Name, "feature/x")
+	}
+	if gotBody.Destination.Branch.Name != "develop" {
+		t.Errorf("body.Destination.Branch.Name = %q, want %q", gotBody.Destination.Branch.Name, "develop")
+	}
+	if !gotBody.CloseSourceBranch {
+		t.Error("body.CloseSourceBranch = false, want true")
+	}
+}
+
 // ---------- Content-Type / Accept headers ----------
 
 func TestDoRequest_Headers(t *testing.T) {
