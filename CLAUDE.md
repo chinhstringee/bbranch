@@ -4,18 +4,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-**bbranch** — CLI tool for creating Git branches and pull requests across multiple Bitbucket Cloud repositories simultaneously. Supports API token (default) and OAuth 2.0 with PKCE authentication.
+**buck** — Multi-repo orchestration tool for Bitbucket Cloud. Supports API token (default) and OAuth 2.0 with PKCE authentication.
 
-- **Module**: `github.com/chinhstringee/bbranch`
+- **Module**: `github.com/chinhstringee/buck`
 - **Go version**: 1.25.0
 
 ## Commands
 
 ```bash
 # Build
-go build -o bbranch
+go build -o buck
 
-# Run all tests (86 tests across 7 packages)
+# Run all tests (101 tests across 9 packages)
 go test ./...
 
 # Run single test
@@ -34,26 +34,26 @@ No Makefile or linter configuration exists. Standard `go vet` and `gofmt` apply.
 
 ```bash
 # Create branches across repos
-bbranch create <branch-name> --repos repo-a,repo-b --from main
-bbranch create <branch-name> --group backend
-bbranch create <branch-name> --dry-run
+buck create <branch-name> --repos repo-a,repo-b --from main
+buck create <branch-name> --group backend
+buck create <branch-name> --dry-run
 
 # Create pull requests across repos
-bbranch pr                    # auto-detect branch and repo from git context
-bbranch pr <branch-name> --repos repo-a,repo-b
-bbranch pr <branch-name> --group backend --destination develop
-bbranch pr <branch-name> --dry-run
+buck pr                    # auto-detect branch and repo from git context
+buck pr <branch-name> --repos repo-a,repo-b
+buck pr <branch-name> --group backend --destination develop
+buck pr <branch-name> --dry-run
 
 # Common flags for both create and pr
 #   -r, --repos       comma-separated repo slugs (supports fuzzy match)
-#   -g, --group       repo group from .bbranch.yaml config
+#   -g, --group       repo group from .buck.yaml config
 #   -i, --interactive  force interactive repo selection
 #       --dry-run      preview without executing
 
 # Other commands
-bbranch list          # List workspace repos
-bbranch login         # OAuth login flow
-bbranch setup         # Interactive API token setup
+buck list          # List workspace repos
+buck login         # OAuth login flow
+buck setup         # Interactive API token setup
 ```
 
 ## Release
@@ -62,7 +62,7 @@ Tag-based via GoReleaser. To release a new version:
 ```bash
 git tag v0.X.0 && git push origin v0.X.0
 # GitHub Actions runs GoReleaser → builds binaries + updates Homebrew tap
-# Users upgrade: brew upgrade bbranch
+# Users upgrade: brew upgrade buck
 ```
 
 ## Architecture
@@ -71,7 +71,7 @@ git tag v0.X.0 && git push origin v0.X.0
 main.go → cmd.Execute()
   │
   cmd/          (Cobra CLI commands)
-  ├── root.go         Viper config init (.bbranch.yaml)
+  ├── root.go         Viper config init (.buck.yaml)
   ├── auth_helper.go  Builds AuthApplier from config (API token or OAuth)
   ├── resolve.go      Shared repo resolution (--repos/--group/interactive)
   ├── login.go        OAuth login flow
@@ -80,10 +80,11 @@ main.go → cmd.Execute()
   └── pr.go           Create pull requests across repos
   │
   internal/     (Private packages)
-  ├── auth/         OAuth 2.0 + PKCE flow, token persistence (~/.bbranch/token.json)
+  ├── auth/         OAuth 2.0 + PKCE flow, token persistence (~/.buck/token.json)
   ├── bitbucket/    REST API client + types + AuthApplier (api.bitbucket.org/2.0)
   ├── config/       YAML config loading with env var expansion (${VAR_NAME})
   ├── creator/      Parallel branch creation orchestrator (goroutines + sync)
+  ├── gitutil/      Git context detection (current branch, Bitbucket remote parsing)
   └── pullrequest/  Parallel PR creation orchestrator (goroutines + sync)
 ```
 
@@ -95,9 +96,9 @@ main.go → cmd.Execute()
 
 ## Config
 
-Config file: `.bbranch.yaml` (searched in cwd, then home dir). Real config is gitignored; `.bbranch.example.yaml` is the template. Supports `${ENV_VAR}` expansion for credential fields.
+Config file: `.buck.yaml` (searched in cwd, then home dir). Real config is gitignored; `.buck.example.yaml` is the template. Supports `${ENV_VAR}` expansion for credential fields.
 
-Auth methods: `api_token` (default, Basic auth) or `oauth` (Bearer token). OAuth token stored at `~/.bbranch/token.json` with 0600 permissions.
+Auth methods: `api_token` (default, Basic auth) or `oauth` (Bearer token). OAuth token stored at `~/.buck/token.json` with 0600 permissions.
 
 ## Testing Patterns
 

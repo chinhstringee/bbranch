@@ -34,13 +34,13 @@ type Token struct {
 	ExpiresAt    time.Time `json:"expires_at"`
 }
 
-// tokenFilePath returns ~/.bbranch/token.json
+// tokenFilePath returns ~/.buck/token.json
 func tokenFilePath() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", fmt.Errorf("cannot find home directory: %w", err)
 	}
-	return filepath.Join(home, ".bbranch", "token.json"), nil
+	return filepath.Join(home, ".buck", "token.json"), nil
 }
 
 // Login performs OAuth 2.0 Authorization Code + PKCE flow.
@@ -145,14 +145,14 @@ func GetToken(clientID, clientSecret string) (string, error) {
 
 	token, err := loadToken()
 	if err != nil {
-		return "", fmt.Errorf("not logged in. Run 'bbranch login' first: %w", err)
+		return "", fmt.Errorf("not logged in. Run 'buck login' first: %w", err)
 	}
 
 	// Refresh if expired (with 30s buffer)
 	if time.Now().After(token.ExpiresAt.Add(-30 * time.Second)) {
 		token, err = refreshToken(clientID, clientSecret, token.RefreshToken)
 		if err != nil {
-			return "", fmt.Errorf("token refresh failed, run 'bbranch login' again: %w", err)
+			return "", fmt.Errorf("token refresh failed, run 'buck login' again: %w", err)
 		}
 		if err := saveToken(token); err != nil {
 			return "", err

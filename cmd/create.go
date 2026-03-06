@@ -5,9 +5,9 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
-	"github.com/chinhstringee/bbranch/internal/bitbucket"
-	"github.com/chinhstringee/bbranch/internal/config"
-	"github.com/chinhstringee/bbranch/internal/creator"
+	"github.com/chinhstringee/buck/internal/bitbucket"
+	"github.com/chinhstringee/buck/internal/config"
+	"github.com/chinhstringee/buck/internal/creator"
 )
 
 var (
@@ -44,7 +44,7 @@ func runCreate(cmd *cobra.Command, args []string) error {
 	}
 
 	if cfg.Workspace == "" {
-		return fmt.Errorf("workspace not configured in .bbranch.yaml")
+		return fmt.Errorf("workspace not configured in .buck.yaml")
 	}
 
 	authApplier, err := buildAuthApplier(cfg)

@@ -1,4 +1,4 @@
-module github.com/chinhstringee/bbranch
+module github.com/chinhstringee/buck
 
 go 1.25.0
 

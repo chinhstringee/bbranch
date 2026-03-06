@@ -12,8 +12,8 @@ import (
 
 var setupCmd = &cobra.Command{
 	Use:   "setup",
-	Short: "Configure bbranch with your Bitbucket credentials",
-	Long:  "Interactive setup that prompts for API token credentials and writes .bbranch.yaml.",
+	Short: "Configure buck with your Bitbucket credentials",
+	Long:  "Interactive setup that prompts for API token credentials and writes .buck.yaml.",
 	RunE:  runSetup,
 }
 
@@ -79,7 +79,7 @@ func runSetup(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to determine home directory: %w", err)
 	}
-	configPath := home + "/.bbranch.yaml"
+	configPath := home + "/.buck.yaml"
 
 	// Check if config already exists
 	if _, err := os.Stat(configPath); err == nil {
@@ -131,8 +131,8 @@ func runSetup(cmd *cobra.Command, args []string) error {
 	green.Println("✓ Configuration saved to " + configPath)
 	fmt.Println()
 	bold.Println("Next steps:")
-	fmt.Println("  bbranch list              — list workspace repos")
-	fmt.Println("  bbranch create <branch>   — create a branch across repos")
+	fmt.Println("  buck list              — list workspace repos")
+	fmt.Println("  buck create <branch>   — create a branch across repos")
 
 	return nil
 }

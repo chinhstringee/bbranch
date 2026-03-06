@@ -9,7 +9,7 @@ import (
 	"unicode"
 
 	"github.com/fatih/color"
-	"github.com/chinhstringee/bbranch/internal/bitbucket"
+	"github.com/chinhstringee/buck/internal/bitbucket"
 )
 
 // Result holds the outcome of a PR creation for one repo.
@@ -53,7 +53,7 @@ func (pc *PRCreator) CreatePRs(workspace string, repos []string, branchName, des
 			}
 
 			// Build description from commits (fallback to static text on error)
-			description := "Automated PR created by bbranch"
+			description := "Automated PR created by buck"
 			commits, err := pc.client.ListCommits(workspace, repoSlug, branchName, dest)
 			if err == nil && len(commits) > 0 {
 				description = buildDescription(commits)

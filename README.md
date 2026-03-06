@@ -1,4 +1,4 @@
-# bbranch
+# buck
 
 CLI tool for creating Git branches across multiple Bitbucket Cloud repositories simultaneously.
 
@@ -18,32 +18,32 @@ CLI tool for creating Git branches across multiple Bitbucket Cloud repositories 
 
 ```bash
 brew tap chinhstringee/tap
-brew install bbranch
+brew install buck
 ```
 
 **Go** (requires Go 1.25+):
 
 ```bash
-go install github.com/chinhstringee/bbranch@latest
+go install github.com/chinhstringee/buck@latest
 ```
 
 **From source**:
 
 ```bash
-git clone https://github.com/chinhstringee/bbranch.git
-cd bbranch
-go build -o bbranch
-sudo mv bbranch /usr/local/bin/
+git clone https://github.com/chinhstringee/buck.git
+cd buck
+go build -o buck
+sudo mv buck /usr/local/bin/
 ```
 
-**Pre-built binaries**: Download from [GitHub Releases](https://github.com/chinhstringee/bbranch/releases), extract, and move to your `$PATH`.
+**Pre-built binaries**: Download from [GitHub Releases](https://github.com/chinhstringee/buck/releases), extract, and move to your `$PATH`.
 
 ### Configure
 
 Copy the example config and fill in your details:
 
 ```bash
-cp .bbranch.example.yaml .bbranch.yaml
+cp .buck.example.yaml .buck.yaml
 ```
 
 #### Option 1: API Token (default, recommended)
@@ -59,7 +59,7 @@ api_token:
   token: ${BITBUCKET_API_TOKEN}
 ```
 
-No `bbranch login` needed — works immediately.
+No `buck login` needed — works immediately.
 
 #### Option 2: OAuth 2.0
 
@@ -76,7 +76,7 @@ oauth:
   client_secret: ${BITBUCKET_OAUTH_CLIENT_SECRET}
 ```
 
-Then authenticate: `bbranch login`
+Then authenticate: `buck login`
 
 All credential fields support `${ENV_VAR}` expansion.
 
@@ -85,26 +85,26 @@ All credential fields support `${ENV_VAR}` expansion.
 ### List repositories
 
 ```bash
-bbranch list
+buck list
 ```
 
 ### Create branches
 
 ```bash
 # Interactive repo selection (default)
-bbranch create feature/auth
+buck create feature/auth
 
 # Using a config group
-bbranch create feature/auth --group backend
+buck create feature/auth --group backend
 
 # Specific repos (supports fuzzy matching)
-bbranch create bugfix/cors --repos "api stringeex,subscription"
+buck create bugfix/cors --repos "api stringeex,subscription"
 
 # From a different source branch
-bbranch create release/v2.0 --from develop
+buck create release/v2.0 --from develop
 
 # Preview without creating
-bbranch create feature/test --dry-run
+buck create feature/test --dry-run
 ```
 
 ### Flags

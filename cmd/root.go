@@ -16,7 +16,7 @@ var (
 )
 
 var rootCmd = &cobra.Command{
-	Use:     "bbranch",
+	Use:     "buck",
 	Short:   "Create git branches across multiple Bitbucket repos",
 	Long:    "A CLI tool to create branches across multiple Bitbucket Cloud repositories simultaneously.",
 	Version: Version,
@@ -32,14 +32,14 @@ func Execute() {
 
 func init() {
 	cobra.OnInitialize(initConfig)
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default: .bbranch.yaml)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default: .buck.yaml)")
 }
 
 func initConfig() {
 	if cfgFile != "" {
 		viper.SetConfigFile(cfgFile)
 	} else {
-		viper.SetConfigName(".bbranch")
+		viper.SetConfigName(".buck")
 		viper.SetConfigType("yaml")
 		viper.AddConfigPath(".")
 

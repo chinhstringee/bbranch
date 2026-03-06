@@ -2,11 +2,11 @@ version: 2
 
 builds:
   - main: .
-    binary: bbranch
+    binary: buck
     env:
       - CGO_ENABLED=0
     ldflags:
-      - -s -w -X github.com/chinhstringee/bbranch/cmd.Version={{.Version}}
+      - -s -w -X github.com/chinhstringee/buck/cmd.Version={{.Version}}
     goos:
       - darwin
       - linux
@@ -22,8 +22,8 @@ brews:
       owner: chinhstringee
       name: homebrew-tap
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
-    homepage: https://github.com/chinhstringee/bbranch
-    description: CLI tool for creating Git branches across multiple Bitbucket repos
+    homepage: https://github.com/chinhstringee/buck
+    description: Multi-repo orchestration tool for Bitbucket
     license: MIT
 
 changelog:

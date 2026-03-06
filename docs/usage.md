@@ -1,4 +1,4 @@
-# bbranch Usage Guide
+# buck Usage Guide
 
 Create git branches across multiple Bitbucket Cloud repositories simultaneously.
 
@@ -12,8 +12,8 @@ Create git branches across multiple Bitbucket Cloud repositories simultaneously.
 ### 2. Build and Configure
 
 ```bash
-go build -o bbranch
-cp .bbranch.example.yaml .bbranch.yaml
+go build -o buck
+cp .buck.example.yaml .buck.yaml
 ```
 
 ### 3. Authentication Setup
@@ -33,14 +33,14 @@ api_token:
   token: YOUR_API_TOKEN
 ```
 
-No `bbranch login` needed — works immediately.
+No `buck login` needed — works immediately.
 
 #### Option B: OAuth 2.0 + PKCE
 
 1. Go to Bitbucket workspace → Settings → API → OAuth consumers
 2. Click "Add consumer"
 3. Configure:
-   - **Name**: `bbranch`
+   - **Name**: `buck`
    - **Callback URL**: `http://localhost:9876/callback`
    - **Permissions**: Repositories (Read + Write)
 4. Save client ID and secret
@@ -56,7 +56,7 @@ oauth:
   client_secret: YOUR_CLIENT_SECRET
 ```
 
-Then run `bbranch login` to authenticate via browser.
+Then run `buck login` to authenticate via browser.
 
 ### 4. Add Groups (optional)
 
@@ -75,29 +75,29 @@ defaults:
 
 ## Commands
 
-### `bbranch login`
+### `buck login`
 
 Authenticate with Bitbucket via OAuth 2.0 browser flow. Only needed when using `auth.method: oauth`.
 
 ```bash
-bbranch login
+buck login
 ```
 
 **What it does:**
 - Opens browser for OAuth authorization
-- Stores token in `~/.bbranch/token.json`
+- Stores token in `~/.buck/token.json`
 - Token reused for all subsequent commands
 
 **Note**: Not needed for API token auth. Run when token expires or you need to switch accounts.
 
 ---
 
-### `bbranch list`
+### `buck list`
 
 List all repositories in your workspace with metadata.
 
 ```bash
-bbranch list
+buck list
 ```
 
 **Output example:**
@@ -122,12 +122,12 @@ Total: 4 repositories
 
 ---
 
-### `bbranch create <branch-name>`
+### `buck create <branch-name>`
 
 Create a branch across selected repositories.
 
 ```bash
-bbranch create feature/new-feature
+buck create feature/new-feature
 ```
 
 **By default**, prompts interactive multi-select of repos. Navigate with arrow keys, toggle with space, confirm with enter.
@@ -148,16 +148,16 @@ bbranch create feature/new-feature
 **Interactive mode (default):**
 
 ```bash
-bbranch create release/v1.2.3
+buck create release/v1.2.3
 ```
 
 **Using a group from config:**
 
 ```bash
-bbranch create feature/auth --group backend
+buck create feature/auth --group backend
 ```
 
-Groups must be defined in `.bbranch.yaml`:
+Groups must be defined in `.buck.yaml`:
 
 ```yaml
 groups:
@@ -169,19 +169,19 @@ groups:
 **Specific repositories:**
 
 ```bash
-bbranch create bugfix/cors --repos api-repo,web-repo
+buck create bugfix/cors --repos api-repo,web-repo
 ```
 
 **From non-default branch:**
 
 ```bash
-bbranch create release/v2.0 --from develop
+buck create release/v2.0 --from develop
 ```
 
 **Preview without creating:**
 
 ```bash
-bbranch create feature/test --dry-run
+buck create feature/test --dry-run
 ```
 
 Output:
@@ -195,18 +195,18 @@ Dry run: would create branch "feature/test" from "master" in:
 **Custom config file:**
 
 ```bash
-bbranch create feature/x --config /path/to/.bbranch.yaml
+buck create feature/x --config /path/to/.buck.yaml
 ```
 
 ---
 
-### `bbranch pr [branch-name]`
+### `buck pr [branch-name]`
 
 Create pull requests from a branch to `master` (or a custom destination). Branch name is optional — when omitted, auto-detects from git context.
 
 **Auto-detection mode** (no arguments):
 ```bash
-bbranch pr
+buck pr
 ```
 Auto-detects:
 - Current branch from git HEAD
@@ -215,7 +215,7 @@ Auto-detects:
 
 **With branch name** (explicit mode):
 ```bash
-bbranch pr feature/auth
+buck pr feature/auth
 ```
 **By default**, prompts interactive multi-select of repos. Navigate with arrow keys, toggle with space, confirm with enter.
 
@@ -237,7 +237,7 @@ bbranch pr feature/auth
 
 ```bash
 # Current branch is "feature/auth", origin points to api-repo
-bbranch pr
+buck pr
 ```
 
 Creates a single PR from current branch to `master` in the detected repo. No interactive selection.
@@ -245,7 +245,7 @@ Creates a single PR from current branch to `master` in the detected repo. No int
 **Interactive mode (explicit branch):**
 
 ```bash
-bbranch pr feature/auth
+buck pr feature/auth
 ```
 
 Creates PRs from `feature/auth` to `master` in selected repos. Prompts interactive multi-select.
@@ -253,25 +253,25 @@ Creates PRs from `feature/auth` to `master` in selected repos. Prompts interacti
 **Using a group from config:**
 
 ```bash
-bbranch pr feature/auth --group backend
+buck pr feature/auth --group backend
 ```
 
 **Specific repositories:**
 
 ```bash
-bbranch pr feature/cors --repos api-repo,web-repo
+buck pr feature/cors --repos api-repo,web-repo
 ```
 
 **Custom destination branch:**
 
 ```bash
-bbranch pr feature/hotfix --destination develop --repos api-repo,worker-repo
+buck pr feature/hotfix --destination develop --repos api-repo,worker-repo
 ```
 
 **Preview without creating:**
 
 ```bash
-bbranch pr feature/test --dry-run
+buck pr feature/test --dry-run
 ```
 
 Output:
@@ -286,7 +286,7 @@ Dry run: would create PRs from "feature/test" to "master" in:
 **Force interactive selection:**
 
 ```bash
-bbranch pr feature/auth --interactive
+buck pr feature/auth --interactive
 ```
 
 ---
@@ -295,10 +295,10 @@ bbranch pr feature/auth --interactive
 
 ### File Locations
 
-bbranch looks for `.bbranch.yaml` in this order:
+buck looks for `.buck.yaml` in this order:
 
 1. Current directory
-2. User home directory (`~/.bbranch.yaml`)
+2. User home directory (`~/.buck.yaml`)
 3. Custom path via `--config` flag
 
 ### Schema
@@ -337,7 +337,7 @@ All credential fields support `${ENV_VAR}` expansion:
 ```bash
 export BITBUCKET_EMAIL=user@example.com
 export BITBUCKET_API_TOKEN=your-token
-bbranch list
+buck list
 ```
 
 ---
@@ -349,26 +349,26 @@ bbranch list
 ```bash
 # One-time: add group to config
 # Then run:
-bbranch create feature/auth --group backend
+buck create feature/auth --group backend
 
 # Or interactively:
-bbranch create feature/auth
+buck create feature/auth
 ```
 
 ### Workflow 2: Create release branch from develop
 
 ```bash
-bbranch create release/v1.5.0 --from develop --repos api-repo,web-repo
+buck create release/v1.5.0 --from develop --repos api-repo,web-repo
 ```
 
 ### Workflow 3: Preview before creating
 
 ```bash
 # Preview
-bbranch create feature/risky-change --dry-run
+buck create feature/risky-change --dry-run
 
 # If satisfied:
-bbranch create feature/risky-change
+buck create feature/risky-change
 ```
 
 ### Workflow 4: Auto-create PR from current branch
@@ -376,7 +376,7 @@ bbranch create feature/risky-change
 ```bash
 # After working on a branch locally
 git checkout feature/auth
-bbranch pr  # Auto-detects branch and repo, creates PR instantly
+buck pr  # Auto-detects branch and repo, creates PR instantly
 ```
 
 No config needed — just works if origin points to a Bitbucket repo.
@@ -385,29 +385,29 @@ No config needed — just works if origin points to a Bitbucket repo.
 
 ```bash
 # Create branches first
-bbranch create feature/auth --group backend
+buck create feature/auth --group backend
 
 # Then create PRs from those branches
-bbranch pr feature/auth --group backend
+buck pr feature/auth --group backend
 ```
 
 Or in one group:
 
 ```bash
-bbranch pr feature/auth --repos api-repo,web-repo,worker-repo
+buck pr feature/auth --repos api-repo,web-repo,worker-repo
 ```
 
 ### Workflow 6: Create PR with custom destination
 
 ```bash
 # PR from feature branch to develop (not master)
-bbranch pr feature/newfeature --destination develop --repos api-repo,web-repo
+buck pr feature/newfeature --destination develop --repos api-repo,web-repo
 ```
 
 ### Workflow 7: Verify workspace setup
 
 ```bash
-bbranch list
+buck list
 ```
 
 ---
@@ -418,7 +418,7 @@ bbranch list
 
 **Problem**: Error when running commands.
 
-**Solution**: Add `workspace:` to `.bbranch.yaml`:
+**Solution**: Add `workspace:` to `.buck.yaml`:
 
 ```yaml
 workspace: your-workspace-slug
@@ -432,7 +432,7 @@ Find your workspace slug in Bitbucket URL: `bitbucket.org/{workspace-slug}`
 
 **Problem**: Commands fail with credentials error.
 
-**Solution**: Set API token in `.bbranch.yaml`:
+**Solution**: Set API token in `.buck.yaml`:
 
 ```yaml
 api_token:
@@ -447,12 +447,12 @@ Required scopes: `read:repository:bitbucket`, `write:repository:bitbucket`.
 
 ### "No repositories found"
 
-**Problem**: `bbranch list` returns empty or create fails.
+**Problem**: `buck list` returns empty or create fails.
 
 **Solutions**:
-1. Verify workspace slug: `bbranch list`
+1. Verify workspace slug: `buck list`
 2. Check API token scopes: needs `read:repository:bitbucket` + `write:repository:bitbucket`
-3. If using OAuth: re-authenticate with `bbranch login`
+3. If using OAuth: re-authenticate with `buck login`
 
 ---
 
@@ -462,8 +462,8 @@ Required scopes: `read:repository:bitbucket`, `write:repository:bitbucket`.
 
 **Solutions**:
 - Try again and use arrow keys + space + enter
-- Use `--repos` flag instead: `bbranch create feature/x --repos api-repo,web-repo`
-- Use `--group` flag: `bbranch create feature/x --group backend`
+- Use `--repos` flag instead: `buck create feature/x --repos api-repo,web-repo`
+- Use `--group` flag: `buck create feature/x --group backend`
 
 ---
 
@@ -479,7 +479,7 @@ Required scopes: `read:repository:bitbucket`, `write:repository:bitbucket`.
 
 | Flag | Description |
 |------|-------------|
-| `--config` | Path to config file (default: `.bbranch.yaml` in current dir or home) |
+| `--config` | Path to config file (default: `.buck.yaml` in current dir or home) |
 | `--help` | Show command help |
 | `--version` | Show tool version |
 
@@ -487,8 +487,8 @@ Required scopes: `read:repository:bitbucket`, `write:repository:bitbucket`.
 
 ## Security Notes
 
-- **Token storage**: `~/.bbranch/token.json` (OAuth only) is readable by your user account only
-- **Credentials**: Never commit `.bbranch.yaml` with real credentials to git
+- **Token storage**: `~/.buck/token.json` (OAuth only) is readable by your user account only
+- **Credentials**: Never commit `.buck.yaml` with real credentials to git
 - **Environment**: Use `${ENV_VAR}` expansion or environment variables in CI/CD pipelines
 - **API token scope**: Use minimal scopes — only `read:repository` + `write:repository`
 
@@ -498,17 +498,17 @@ Required scopes: `read:repository:bitbucket`, `write:repository:bitbucket`.
 
 | Task | Command |
 |------|---------|
-| Authenticate | `bbranch login` |
-| List repos | `bbranch list` |
-| Create (interactive) | `bbranch create feature/auth` |
-| Create (group) | `bbranch create feature/auth --group backend` |
-| Create (specific repos) | `bbranch create feature/auth --repos api-repo,web-repo` |
-| Create from different branch | `bbranch create release/v1 --from develop` |
-| Create (preview) | `bbranch create feature/test --dry-run` |
-| PR (auto-detect) | `bbranch pr` |
-| PR (interactive) | `bbranch pr feature/auth` |
-| PR (group) | `bbranch pr feature/auth --group backend` |
-| PR (specific repos) | `bbranch pr feature/auth --repos api-repo,web-repo` |
-| PR (custom destination) | `bbranch pr feature/auth --destination develop` |
-| PR (preview) | `bbranch pr feature/test --dry-run` |
-| Custom config | `bbranch list --config ~/.bbranch-prod.yaml` |
+| Authenticate | `buck login` |
+| List repos | `buck list` |
+| Create (interactive) | `buck create feature/auth` |
+| Create (group) | `buck create feature/auth --group backend` |
+| Create (specific repos) | `buck create feature/auth --repos api-repo,web-repo` |
+| Create from different branch | `buck create release/v1 --from develop` |
+| Create (preview) | `buck create feature/test --dry-run` |
+| PR (auto-detect) | `buck pr` |
+| PR (interactive) | `buck pr feature/auth` |
+| PR (group) | `buck pr feature/auth --group backend` |
+| PR (specific repos) | `buck pr feature/auth --repos api-repo,web-repo` |
+| PR (custom destination) | `buck pr feature/auth --destination develop` |
+| PR (preview) | `buck pr feature/test --dry-run` |
+| Custom config | `buck list --config ~/.buck-prod.yaml` |

@@ -5,10 +5,10 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
-	"github.com/chinhstringee/bbranch/internal/bitbucket"
-	"github.com/chinhstringee/bbranch/internal/config"
-	"github.com/chinhstringee/bbranch/internal/gitutil"
-	"github.com/chinhstringee/bbranch/internal/pullrequest"
+	"github.com/chinhstringee/buck/internal/bitbucket"
+	"github.com/chinhstringee/buck/internal/config"
+	"github.com/chinhstringee/buck/internal/gitutil"
+	"github.com/chinhstringee/buck/internal/pullrequest"
 )
 
 var (
@@ -45,7 +45,7 @@ func runPR(cmd *cobra.Command, args []string) error {
 	autoDetect := len(args) == 0 && prFlagRepos == "" && prFlagGroup == "" && !prFlagInteractive
 
 	if autoDetect {
-		hint := "\n  Hint: use 'bbranch pr <branch> --repos <repo>' to specify explicitly"
+		hint := "\n  Hint: use 'buck pr <branch> --repos <repo>' to specify explicitly"
 		branch, err := gitutil.CurrentBranch()
 		if err != nil {
 			return fmt.Errorf("auto-detect failed: %w%s", err, hint)
@@ -73,7 +73,7 @@ func runPR(cmd *cobra.Command, args []string) error {
 	// Use remote workspace in auto-detect mode, config workspace otherwise
 	if !autoDetect {
 		if cfg.Workspace == "" {
-			return fmt.Errorf("workspace not configured in .bbranch.yaml")
+			return fmt.Errorf("workspace not configured in .buck.yaml")
 		}
 		workspace = cfg.Workspace
 	}

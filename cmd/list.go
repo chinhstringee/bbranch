@@ -5,8 +5,8 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
-	"github.com/chinhstringee/bbranch/internal/bitbucket"
-	"github.com/chinhstringee/bbranch/internal/config"
+	"github.com/chinhstringee/buck/internal/bitbucket"
+	"github.com/chinhstringee/buck/internal/config"
 )
 
 var listCmd = &cobra.Command{
@@ -19,7 +19,7 @@ var listCmd = &cobra.Command{
 		}
 
 		if cfg.Workspace == "" {
-			return fmt.Errorf("workspace not configured in .bbranch.yaml")
+			return fmt.Errorf("workspace not configured in .buck.yaml")
 		}
 
 		authApplier, err := buildAuthApplier(cfg)

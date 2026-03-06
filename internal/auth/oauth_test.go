@@ -15,13 +15,13 @@ import (
 
 // ---------- tokenFilePath ----------
 
-func TestTokenFilePath_ContainsBbranch(t *testing.T) {
+func TestTokenFilePath_ContainsBuck(t *testing.T) {
 	path, err := tokenFilePath()
 	if err != nil {
 		t.Fatalf("tokenFilePath() error: %v", err)
 	}
-	if !strings.Contains(path, ".bbranch") {
-		t.Errorf("tokenFilePath() = %q, want path containing .bbranch", path)
+	if !strings.Contains(path, ".buck") {
+		t.Errorf("tokenFilePath() = %q, want path containing .buck", path)
 	}
 	if !strings.HasSuffix(path, "token.json") {
 		t.Errorf("tokenFilePath() = %q, want path ending in token.json", path)
@@ -32,7 +32,7 @@ func TestTokenFilePath_ContainsBbranch(t *testing.T) {
 
 func TestSaveLoadToken_RoundTrip(t *testing.T) {
 	dir := t.TempDir()
-	tokenPath := filepath.Join(dir, ".bbranch", "token.json")
+	tokenPath := filepath.Join(dir, ".buck", "token.json")
 
 	original := &Token{
 		AccessToken:  "access-abc123",
@@ -88,7 +88,7 @@ func TestLoadToken_InvalidJSON(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("HOME", dir)
 
-	tokenDir := filepath.Join(dir, ".bbranch")
+	tokenDir := filepath.Join(dir, ".buck")
 	if err := os.MkdirAll(tokenDir, 0700); err != nil {
 		t.Fatalf("mkdir: %v", err)
 	}
@@ -115,7 +115,7 @@ func TestSaveToken_CreatesDirectory(t *testing.T) {
 		t.Fatalf("saveToken() error: %v", err)
 	}
 
-	path := filepath.Join(dir, ".bbranch", "token.json")
+	path := filepath.Join(dir, ".buck", "token.json")
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		t.Errorf("expected token file at %s, not found", path)
 	}
@@ -130,7 +130,7 @@ func TestSaveToken_FilePermissions(t *testing.T) {
 		t.Fatalf("saveToken() error: %v", err)
 	}
 
-	path := filepath.Join(dir, ".bbranch", "token.json")
+	path := filepath.Join(dir, ".buck", "token.json")
 	info, err := os.Stat(path)
 	if err != nil {
 		t.Fatalf("stat error: %v", err)

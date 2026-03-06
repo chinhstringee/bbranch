@@ -9,7 +9,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/chinhstringee/bbranch/internal/bitbucket"
+	"github.com/chinhstringee/buck/internal/bitbucket"
 )
 
 // mockPRServer builds an httptest.Server that handles:

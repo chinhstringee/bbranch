@@ -6,7 +6,7 @@ import (
 	"sync"
 
 	"github.com/fatih/color"
-	"github.com/chinhstringee/bbranch/internal/bitbucket"
+	"github.com/chinhstringee/buck/internal/bitbucket"
 )
 
 // Result holds the outcome of a branch creation for one repo.

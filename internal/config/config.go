@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-// Config represents the .bbranch.yaml configuration.
+// Config represents the .buck.yaml configuration.
 type Config struct {
 	Workspace string              `mapstructure:"workspace"`
 	Auth      AuthConfig          `mapstructure:"auth"`
