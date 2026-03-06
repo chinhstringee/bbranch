@@ -15,6 +15,7 @@ type Result struct {
 	Success    bool
 	Error      string
 	CommitHash string
+	BranchURL  string
 }
 
 // BranchCreator orchestrates parallel branch creation across repos.
@@ -48,6 +49,7 @@ func (bc *BranchCreator) CreateBranches(workspace string, repos []string, branch
 				result.Error = err.Error()
 			} else {
 				result.Success = true
+				result.BranchURL = fmt.Sprintf("https://bitbucket.org/%s/%s/branch/%s", workspace, repoSlug, branchName)
 				// Show short hash (first 7 chars)
 				if len(branch.Target.Hash) > 7 {
 					result.CommitHash = branch.Target.Hash[:7]
@@ -76,6 +78,7 @@ func (bc *BranchCreator) CreateBranches(workspace string, repos []string, branch
 func PrintResults(results []Result) {
 	green := color.New(color.FgGreen).SprintFunc()
 	red := color.New(color.FgRed).SprintFunc()
+	cyan := color.New(color.FgCyan).SprintFunc()
 	bold := color.New(color.Bold).SprintFunc()
 
 	succeeded := 0
@@ -86,6 +89,9 @@ func PrintResults(results []Result) {
 		if r.Success {
 			succeeded++
 			fmt.Printf("  %s %-30s created (%s)\n", green("✓"), r.RepoSlug, r.CommitHash)
+			if r.BranchURL != "" {
+				fmt.Printf("    %s\n", cyan(r.BranchURL))
+			}
 		} else {
 			failed++
 			fmt.Printf("  %s %-30s %s\n", red("✗"), r.RepoSlug, r.Error)

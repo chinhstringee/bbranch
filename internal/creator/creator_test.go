@@ -112,6 +112,11 @@ func TestCreateBranches_AllSuccess(t *testing.T) {
 		if len(r.CommitHash) > 7 {
 			t.Errorf("repo %q CommitHash length = %d, want ≤7", r.RepoSlug, len(r.CommitHash))
 		}
+		// BranchURL should contain workspace, repo slug, and branch name
+		wantURL := fmt.Sprintf("https://bitbucket.org/my-workspace/%s/branch/feature/test", r.RepoSlug)
+		if r.BranchURL != wantURL {
+			t.Errorf("repo %q BranchURL = %q, want %q", r.RepoSlug, r.BranchURL, wantURL)
+		}
 	}
 }
 
@@ -160,6 +165,9 @@ func TestCreateBranches_PartialFailure(t *testing.T) {
 	for _, r := range results {
 		if r.Success {
 			succeeded++
+			if r.BranchURL == "" {
+				t.Errorf("repo %q succeeded but has empty BranchURL", r.RepoSlug)
+			}
 		} else {
 			failed++
 			if r.RepoSlug != "repo-fail" {
@@ -167,6 +175,9 @@ func TestCreateBranches_PartialFailure(t *testing.T) {
 			}
 			if r.Error == "" {
 				t.Errorf("failed result %q has empty Error field", r.RepoSlug)
+			}
+			if r.BranchURL != "" {
+				t.Errorf("failed result %q should have empty BranchURL, got %q", r.RepoSlug, r.BranchURL)
 			}
 		}
 	}
