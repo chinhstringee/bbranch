@@ -39,6 +39,7 @@ bbranch create <branch-name> --group backend
 bbranch create <branch-name> --dry-run
 
 # Create pull requests across repos
+bbranch pr                    # auto-detect branch and repo from git context
 bbranch pr <branch-name> --repos repo-a,repo-b
 bbranch pr <branch-name> --group backend --destination develop
 bbranch pr <branch-name> --dry-run

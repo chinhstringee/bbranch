@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/chinhstringee/bbranch/internal/bitbucket"
 	"github.com/chinhstringee/bbranch/internal/config"
+	"github.com/chinhstringee/bbranch/internal/gitutil"
 	"github.com/chinhstringee/bbranch/internal/pullrequest"
 )
 
@@ -19,9 +20,9 @@ var (
 )
 
 var prCmd = &cobra.Command{
-	Use:   "pr <branch-name>",
-	Short: "Create pull requests across multiple Bitbucket repos",
-	Args:  cobra.ExactArgs(1),
+	Use:   "pr [branch-name]",
+	Short: "Create pull requests (auto-detects branch and repo from CWD when no args)",
+	Args:  cobra.MaximumNArgs(1),
 	RunE:  runPR,
 }
 
@@ -36,15 +37,45 @@ func init() {
 }
 
 func runPR(cmd *cobra.Command, args []string) error {
-	branchName := args[0]
+	var branchName string
+	var repos []string
+	var workspace string
+
+	// Auto-detect mode: no args and no --repos/--group flags
+	autoDetect := len(args) == 0 && prFlagRepos == "" && prFlagGroup == "" && !prFlagInteractive
+
+	if autoDetect {
+		hint := "\n  Hint: use 'bbranch pr <branch> --repos <repo>' to specify explicitly"
+		branch, err := gitutil.CurrentBranch()
+		if err != nil {
+			return fmt.Errorf("auto-detect failed: %w%s", err, hint)
+		}
+		branchName = branch
+
+		ws, repoSlug, err := gitutil.ParseBitbucketRemote()
+		if err != nil {
+			return fmt.Errorf("auto-detect failed: %w%s", err, hint)
+		}
+		workspace = ws
+		repos = []string{repoSlug}
+	} else {
+		if len(args) == 0 {
+			return fmt.Errorf("branch name required when using --repos, --group, or --interactive")
+		}
+		branchName = args[0]
+	}
 
 	cfg, err := config.Load()
 	if err != nil {
 		return fmt.Errorf("failed to load config: %w", err)
 	}
 
-	if cfg.Workspace == "" {
-		return fmt.Errorf("workspace not configured in .bbranch.yaml")
+	// Use remote workspace in auto-detect mode, config workspace otherwise
+	if !autoDetect {
+		if cfg.Workspace == "" {
+			return fmt.Errorf("workspace not configured in .bbranch.yaml")
+		}
+		workspace = cfg.Workspace
 	}
 
 	authApplier, err := buildAuthApplier(cfg)
@@ -54,13 +85,14 @@ func runPR(cmd *cobra.Command, args []string) error {
 
 	client := bitbucket.NewClient(authApplier)
 
-	repos, err := resolveTargetRepos(prFlagRepos, prFlagGroup, prFlagInteractive, cfg, client)
-	if err != nil {
-		return err
-	}
-
-	if len(repos) == 0 {
-		return fmt.Errorf("no repositories selected")
+	if !autoDetect {
+		repos, err = resolveTargetRepos(prFlagRepos, prFlagGroup, prFlagInteractive, cfg, client)
+		if err != nil {
+			return err
+		}
+		if len(repos) == 0 {
+			return fmt.Errorf("no repositories selected")
+		}
 	}
 
 	bold := color.New(color.Bold)
@@ -72,7 +104,7 @@ func runPR(cmd *cobra.Command, args []string) error {
 		}
 		bold.Printf("Dry run: would create PRs from %q to %q in:\n", branchName, dest)
 		for _, r := range repos {
-			fmt.Printf("  - %s\n", r)
+			fmt.Printf("  - %s/%s\n", workspace, r)
 		}
 		return nil
 	}
@@ -80,7 +112,7 @@ func runPR(cmd *cobra.Command, args []string) error {
 	bold.Printf("Creating PRs from %q across %d repos...\n", branchName, len(repos))
 
 	pc := pullrequest.NewPRCreator(client)
-	results := pc.CreatePRs(cfg.Workspace, repos, branchName, prFlagDestination)
+	results := pc.CreatePRs(workspace, repos, branchName, prFlagDestination)
 	pullrequest.PrintResults(results)
 
 	return nil

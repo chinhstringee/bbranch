@@ -200,14 +200,23 @@ bbranch create feature/x --config /path/to/.bbranch.yaml
 
 ---
 
-### `bbranch pr <branch-name>`
+### `bbranch pr [branch-name]`
 
-Create pull requests across selected repositories from a specific branch to `master` (or a custom destination).
+Create pull requests from a branch to `master` (or a custom destination). Branch name is optional — when omitted, auto-detects from git context.
 
+**Auto-detection mode** (no arguments):
+```bash
+bbranch pr
+```
+Auto-detects:
+- Current branch from git HEAD
+- Repository from `origin` remote URL (Bitbucket format)
+- Creates PR in that repo only, without prompts
+
+**With branch name** (explicit mode):
 ```bash
 bbranch pr feature/auth
 ```
-
 **By default**, prompts interactive multi-select of repos. Navigate with arrow keys, toggle with space, confirm with enter.
 
 #### Options
@@ -224,13 +233,22 @@ bbranch pr feature/auth
 
 #### Examples
 
-**Interactive mode (default):**
+**Auto-detect from git context (fastest):**
+
+```bash
+# Current branch is "feature/auth", origin points to api-repo
+bbranch pr
+```
+
+Creates a single PR from current branch to `master` in the detected repo. No interactive selection.
+
+**Interactive mode (explicit branch):**
 
 ```bash
 bbranch pr feature/auth
 ```
 
-Creates PRs from `feature/auth` to `master`.
+Creates PRs from `feature/auth` to `master` in selected repos. Prompts interactive multi-select.
 
 **Using a group from config:**
 
@@ -259,7 +277,7 @@ bbranch pr feature/test --dry-run
 Output:
 
 ```
-Dry run: would create PR from "feature/test" to "master" in:
+Dry run: would create PRs from "feature/test" to "master" in:
   - api-repo
   - web-repo
   - worker-repo
@@ -353,7 +371,17 @@ bbranch create feature/risky-change --dry-run
 bbranch create feature/risky-change
 ```
 
-### Workflow 4: Create pull requests across repos
+### Workflow 4: Auto-create PR from current branch
+
+```bash
+# After working on a branch locally
+git checkout feature/auth
+bbranch pr  # Auto-detects branch and repo, creates PR instantly
+```
+
+No config needed — just works if origin points to a Bitbucket repo.
+
+### Workflow 5: Create pull requests across repos
 
 ```bash
 # Create branches first
@@ -369,14 +397,14 @@ Or in one group:
 bbranch pr feature/auth --repos api-repo,web-repo,worker-repo
 ```
 
-### Workflow 5: Create PR with custom destination
+### Workflow 6: Create PR with custom destination
 
 ```bash
 # PR from feature branch to develop (not master)
 bbranch pr feature/newfeature --destination develop --repos api-repo,web-repo
 ```
 
-### Workflow 6: Verify workspace setup
+### Workflow 7: Verify workspace setup
 
 ```bash
 bbranch list
@@ -477,6 +505,7 @@ Required scopes: `read:repository:bitbucket`, `write:repository:bitbucket`.
 | Create (specific repos) | `bbranch create feature/auth --repos api-repo,web-repo` |
 | Create from different branch | `bbranch create release/v1 --from develop` |
 | Create (preview) | `bbranch create feature/test --dry-run` |
+| PR (auto-detect) | `bbranch pr` |
 | PR (interactive) | `bbranch pr feature/auth` |
 | PR (group) | `bbranch pr feature/auth --group backend` |
 | PR (specific repos) | `bbranch pr feature/auth --repos api-repo,web-repo` |
