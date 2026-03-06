@@ -63,10 +63,92 @@ type PRBranchName struct {
 
 // PullRequest represents a Bitbucket pull request response.
 type PullRequest struct {
-	ID    int     `json:"id"`
-	Title string  `json:"title"`
-	State string  `json:"state"`
-	Links PRLinks `json:"links"`
+	ID           int             `json:"id"`
+	Title        string          `json:"title"`
+	State        string          `json:"state"`
+	Description  string          `json:"description"`
+	Author       PRAuthor        `json:"author"`
+	Source       PRBranchRef     `json:"source"`
+	Destination  PRBranchRef     `json:"destination"`
+	Participants []PRParticipant `json:"participants"`
+	Reviewers    []PRReviewer    `json:"reviewers"`
+	Links        PRLinks         `json:"links"`
+	CreatedOn    string          `json:"created_on"`
+	UpdatedOn    string          `json:"updated_on"`
+}
+
+// PRAuthor represents a pull request author.
+type PRAuthor struct {
+	DisplayName string `json:"display_name"`
+	UUID        string `json:"uuid"`
+	Nickname    string `json:"nickname"`
+	AccountID   string `json:"account_id"`
+}
+
+// PRParticipant represents a user's participation in a pull request.
+type PRParticipant struct {
+	User     PRAuthor `json:"user"`
+	Role     string   `json:"role"` // REVIEWER, PARTICIPANT
+	Approved bool     `json:"approved"`
+	State    string   `json:"state"` // approved, changes_requested
+}
+
+// PRReviewer identifies a reviewer by UUID or account ID.
+type PRReviewer struct {
+	UUID      string `json:"uuid,omitempty"`
+	AccountID string `json:"account_id,omitempty"`
+}
+
+// User represents the authenticated Bitbucket user.
+type User struct {
+	DisplayName string `json:"display_name"`
+	UUID        string `json:"uuid"`
+	Nickname    string `json:"nickname"`
+	AccountID   string `json:"account_id"`
+	Username    string `json:"username"`
+}
+
+// PaginatedPullRequests wraps paginated PR list responses.
+type PaginatedPullRequests struct {
+	Values []PullRequest `json:"values"`
+	Next   string        `json:"next"`
+	Page   int           `json:"page"`
+	Size   int           `json:"size"`
+}
+
+// CommitStatus represents a build/CI status on a commit.
+type CommitStatus struct {
+	State       string `json:"state"` // SUCCESSFUL, FAILED, INPROGRESS, STOPPED
+	Key         string `json:"key"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	URL         string `json:"url"`
+}
+
+// PaginatedCommitStatuses wraps paginated commit status responses.
+type PaginatedCommitStatuses struct {
+	Values []CommitStatus `json:"values"`
+	Next   string         `json:"next"`
+}
+
+// MergePRRequest is the POST body for merging a pull request.
+type MergePRRequest struct {
+	MergeStrategy     string `json:"merge_strategy,omitempty"`
+	CloseSourceBranch bool   `json:"close_source_branch"`
+	Message           string `json:"message,omitempty"`
+}
+
+// PRUpdateRequest is the PUT body for updating a pull request.
+type PRUpdateRequest struct {
+	Title       string       `json:"title,omitempty"`
+	Description string       `json:"description,omitempty"`
+	Reviewers   []PRReviewer `json:"reviewers,omitempty"`
+}
+
+// PaginatedBranches wraps paginated branch list responses.
+type PaginatedBranches struct {
+	Values []Branch `json:"values"`
+	Next   string   `json:"next"`
 }
 
 // PRLinks holds pull request link references.

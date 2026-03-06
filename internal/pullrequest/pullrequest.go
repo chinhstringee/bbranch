@@ -94,9 +94,9 @@ func (pc *PRCreator) CreatePRs(workspace string, repos []string, branchName, des
 
 // PrintResults displays a colored summary of PR creation results.
 func PrintResults(results []Result) {
-	green := color.New(color.FgGreen).SprintFunc()
-	red := color.New(color.FgRed).SprintFunc()
-	bold := color.New(color.Bold).SprintFunc()
+	green := colorGreen()
+	red := colorRed()
+	bold := colorBold()
 
 	succeeded := 0
 	failed := 0
@@ -123,6 +123,11 @@ func PrintResults(results []Result) {
 		red(fmt.Sprintf("%d", failed)),
 	)
 }
+
+// Shared color helpers.
+func colorGreen() func(a ...interface{}) string { return color.New(color.FgGreen).SprintFunc() }
+func colorRed() func(a ...interface{}) string   { return color.New(color.FgRed).SprintFunc() }
+func colorBold() func(a ...interface{}) string   { return color.New(color.Bold).SprintFunc() }
 
 // ticketPattern matches JIRA-style ticket numbers like SPT-1298, PROJ-42.
 var ticketPattern = regexp.MustCompile(`([A-Z]+)-(\d+)`)

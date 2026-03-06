@@ -15,7 +15,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # Build
 go build -o buck
 
-# Run all tests (101 tests across 9 packages)
+# Run all tests (126 tests across 11 packages)
 go test ./...
 
 # Run single test
@@ -44,7 +44,24 @@ buck pr <branch-name> --repos repo-a,repo-b
 buck pr <branch-name> --group backend --destination develop
 buck pr <branch-name> --dry-run
 
-# Common flags for both create and pr
+# PR management subcommands
+buck pr merge <branch> --repos repo-a --strategy squash --yes
+buck pr decline <branch> --group backend --yes
+buck pr approve <branch> --repos repo-a,repo-b
+buck pr reviewers <branch> --add "{uuid1},{uuid2}" --repos repo-a
+buck pr list --state OPEN --mine --group backend
+
+# PR status dashboard
+buck status                # auto-detect from CWD
+buck status --group backend
+buck status --mine
+buck status --author alice
+
+# Branch cleanup
+buck clean <branch> --repos repo-a,repo-b --yes
+buck clean --merged --group backend --dry-run
+
+# Common flags for create, pr, status, clean
 #   -r, --repos       comma-separated repo slugs (supports fuzzy match)
 #   -g, --group       repo group from .buck.yaml config
 #   -i, --interactive  force interactive repo selection
@@ -77,22 +94,38 @@ main.go → cmd.Execute()
   ├── login.go        OAuth login flow
   ├── list.go         List workspace repos
   ├── create.go       Create branches across repos
-  ├── pr.go           Create pull requests across repos
+  ├── pr.go           PR parent command (backward compat: `buck pr <branch>` = create)
+  ├── pr_helpers.go   Shared PR subcommand context resolution
+  ├── pr_merge.go     Merge PRs by branch name across repos
+  ├── pr_decline.go   Decline PRs by branch name across repos
+  ├── pr_approve.go   Approve PRs by branch name across repos
+  ├── pr_reviewers.go Add reviewers to PRs across repos
+  ├── pr_list.go      List PRs across repos with filters
+  ├── status.go       PR status dashboard across repos
+  ├── clean.go        Branch cleanup (single or --merged)
   └── setup.go        Interactive API token configuration
   │
   internal/     (Private packages)
   ├── auth/         OAuth 2.0 + PKCE flow, token persistence (~/.buck/token.json)
   ├── bitbucket/    REST API client + types + AuthApplier (api.bitbucket.org/2.0)
+  ├── cleanup/      Parallel branch deletion orchestrator with protected branches
   ├── config/       YAML config loading with env var expansion (${VAR_NAME})
   ├── creator/      Parallel branch creation orchestrator (goroutines + sync)
+  ├── dashboard/    Concurrent PR fetcher + colored table display
   ├── gitutil/      Git context detection (current branch, Bitbucket remote parsing)
   ├── matcher/      Fuzzy repo slug matching
-  └── pullrequest/  Parallel PR creation orchestrator (goroutines + sync)
+  └── pullrequest/  PR creation + management orchestrators (goroutines + sync)
 ```
 
 **Key data flow for `create` command**: Config loading → Token retrieval (auto-refresh) → Repo resolution (flags/groups/interactive) → Concurrent branch creation → Colored result display.
 
 **Key data flow for `pr` command**: Config loading → Token retrieval → Repo resolution → Per-repo: ListCommits (description) + CreatePullRequest → Colored result display with PR URLs.
+
+**Key data flow for `pr merge/decline/approve`**: Config/auth → Repo resolution → Per-repo: FindPRByBranch → Action (merge/decline/approve) → Colored result display.
+
+**Key data flow for `status` command**: Config/auth → Repo resolution → Per-repo: ListPullRequests → Filter (--mine/--author) → Colored dashboard table.
+
+**Key data flow for `clean` command**: Config/auth → Repo resolution → Per-repo: DeleteBranch (or ListMergedPRBranches → DeleteBranch for --merged) → Colored result display.
 
 **Repo resolution order**: `--interactive` flag > `--repos` flag > `--group` flag > interactive multi-select (charmbracelet/huh).
 
@@ -108,7 +141,8 @@ Auth methods: `api_token` (default, Basic auth) or `oauth` (Bearer token). OAuth
 - `t.TempDir()` for file system isolation
 - `t.Setenv()` for env var isolation
 - Mock `AuthApplier func(req *http.Request) error` for auth injection
-- Creator tests verify concurrency safety with stress tests (20 repos)
+- `hostRewriteTransport` redirects real API URLs to test server (for orchestrator tests)
+- Creator/dashboard/cleanup tests verify concurrency safety with stress tests (15-20 repos)
 
 ## Dependencies
 

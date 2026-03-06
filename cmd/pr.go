@@ -21,17 +21,21 @@ var (
 
 var prCmd = &cobra.Command{
 	Use:   "pr [branch-name]",
-	Short: "Create pull requests (auto-detects branch and repo from CWD when no args)",
+	Short: "Pull request operations (create, merge, decline, approve, list)",
+	Long:  "Create and manage pull requests across multiple Bitbucket repos.\nRun without subcommand to create PRs (backward compatible).",
 	Args:  cobra.MaximumNArgs(1),
 	RunE:  runPR,
 }
 
 func init() {
-	prCmd.Flags().StringVarP(&prFlagGroup, "group", "g", "", "repo group from config")
-	prCmd.Flags().StringVarP(&prFlagRepos, "repos", "r", "", "comma-separated repo slugs")
-	prCmd.Flags().BoolVar(&prFlagDryRun, "dry-run", false, "preview actions without executing")
+	// Shared flags available to all pr subcommands
+	prCmd.PersistentFlags().StringVarP(&prFlagGroup, "group", "g", "", "repo group from config")
+	prCmd.PersistentFlags().StringVarP(&prFlagRepos, "repos", "r", "", "comma-separated repo slugs")
+	prCmd.PersistentFlags().BoolVar(&prFlagDryRun, "dry-run", false, "preview actions without executing")
+	prCmd.PersistentFlags().BoolVarP(&prFlagInteractive, "interactive", "i", false, "select repos interactively")
+
+	// Create-only flag
 	prCmd.Flags().StringVarP(&prFlagDestination, "destination", "d", "", "destination branch (default: master)")
-	prCmd.Flags().BoolVarP(&prFlagInteractive, "interactive", "i", false, "select repos interactively")
 
 	rootCmd.AddCommand(prCmd)
 }

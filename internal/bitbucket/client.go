@@ -128,6 +128,133 @@ func (c *Client) ListCommits(workspace, repoSlug, include, exclude string) ([]Co
 	return page.Values, nil
 }
 
+// ListPullRequests returns PRs for a repo filtered by state (default: OPEN).
+func (c *Client) ListPullRequests(workspace, repoSlug, state string) ([]PullRequest, error) {
+	if state == "" {
+		state = "OPEN"
+	}
+	nextURL := fmt.Sprintf("%s/repositories/%s/%s/pullrequests?state=%s&pagelen=50",
+		baseURL, url.PathEscape(workspace), url.PathEscape(repoSlug), url.QueryEscape(state))
+
+	var allPRs []PullRequest
+	for i := 0; nextURL != "" && i < 10; i++ {
+		var page PaginatedPullRequests
+		if err := c.doRequest("GET", nextURL, nil, &page); err != nil {
+			return nil, fmt.Errorf("failed to list pull requests: %w", err)
+		}
+		allPRs = append(allPRs, page.Values...)
+		nextURL = page.Next
+	}
+	return allPRs, nil
+}
+
+// GetCurrentUser returns the authenticated user.
+func (c *Client) GetCurrentUser() (*User, error) {
+	reqURL := fmt.Sprintf("%s/user", baseURL)
+	var user User
+	if err := c.doRequest("GET", reqURL, nil, &user); err != nil {
+		return nil, fmt.Errorf("failed to get current user: %w", err)
+	}
+	return &user, nil
+}
+
+// FindPRByBranch finds a PR by source branch name and state (default: OPEN).
+func (c *Client) FindPRByBranch(workspace, repoSlug, branchName, state string) (*PullRequest, error) {
+	if state == "" {
+		state = "OPEN"
+	}
+	if strings.ContainsAny(branchName, `"`) {
+		return nil, fmt.Errorf("invalid branch name: contains illegal characters")
+	}
+	query := fmt.Sprintf(`source.branch.name="%s"`, branchName)
+	reqURL := fmt.Sprintf("%s/repositories/%s/%s/pullrequests?state=%s&q=%s",
+		baseURL, url.PathEscape(workspace), url.PathEscape(repoSlug),
+		url.QueryEscape(state), url.QueryEscape(query))
+
+	var page PaginatedPullRequests
+	if err := c.doRequest("GET", reqURL, nil, &page); err != nil {
+		return nil, fmt.Errorf("failed to find PR for branch %q: %w", branchName, err)
+	}
+	if len(page.Values) == 0 {
+		return nil, fmt.Errorf("no %s PR found for branch %q", state, branchName)
+	}
+	return &page.Values[0], nil
+}
+
+// MergePR merges a pull request.
+func (c *Client) MergePR(workspace, repoSlug string, prID int, req MergePRRequest) error {
+	reqURL := fmt.Sprintf("%s/repositories/%s/%s/pullrequests/%d/merge",
+		baseURL, url.PathEscape(workspace), url.PathEscape(repoSlug), prID)
+	return c.doRequest("POST", reqURL, req, nil)
+}
+
+// DeclinePR declines (closes without merging) a pull request.
+func (c *Client) DeclinePR(workspace, repoSlug string, prID int) error {
+	reqURL := fmt.Sprintf("%s/repositories/%s/%s/pullrequests/%d/decline",
+		baseURL, url.PathEscape(workspace), url.PathEscape(repoSlug), prID)
+	return c.doRequest("POST", reqURL, nil, nil)
+}
+
+// ApprovePR approves a pull request.
+func (c *Client) ApprovePR(workspace, repoSlug string, prID int) error {
+	reqURL := fmt.Sprintf("%s/repositories/%s/%s/pullrequests/%d/approve",
+		baseURL, url.PathEscape(workspace), url.PathEscape(repoSlug), prID)
+	return c.doRequest("POST", reqURL, nil, nil)
+}
+
+// UpdatePR updates a pull request (e.g., to add reviewers).
+func (c *Client) UpdatePR(workspace, repoSlug string, prID int, req PRUpdateRequest) (*PullRequest, error) {
+	reqURL := fmt.Sprintf("%s/repositories/%s/%s/pullrequests/%d",
+		baseURL, url.PathEscape(workspace), url.PathEscape(repoSlug), prID)
+	var result PullRequest
+	if err := c.doRequest("PUT", reqURL, req, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+// DeleteBranch deletes a branch from a repository.
+func (c *Client) DeleteBranch(workspace, repoSlug, branchName string) error {
+	reqURL := fmt.Sprintf("%s/repositories/%s/%s/refs/branches/%s",
+		baseURL, url.PathEscape(workspace), url.PathEscape(repoSlug), url.PathEscape(branchName))
+	return c.doRequest("DELETE", reqURL, nil, nil)
+}
+
+// ListBranches returns all branches in a repository (handles pagination).
+func (c *Client) ListBranches(workspace, repoSlug string) ([]Branch, error) {
+	var allBranches []Branch
+	nextURL := fmt.Sprintf("%s/repositories/%s/%s/refs/branches?pagelen=100",
+		baseURL, url.PathEscape(workspace), url.PathEscape(repoSlug))
+
+	for i := 0; nextURL != "" && i < 50; i++ {
+		var page PaginatedBranches
+		if err := c.doRequest("GET", nextURL, nil, &page); err != nil {
+			return nil, fmt.Errorf("failed to list branches: %w", err)
+		}
+		allBranches = append(allBranches, page.Values...)
+		nextURL = page.Next
+	}
+	return allBranches, nil
+}
+
+// ListMergedPRBranches returns source branch names from merged PRs.
+func (c *Client) ListMergedPRBranches(workspace, repoSlug string) ([]string, error) {
+	prs, err := c.ListPullRequests(workspace, repoSlug, "MERGED")
+	if err != nil {
+		return nil, err
+	}
+	seen := make(map[string]bool)
+	var branches []string
+	for _, pr := range prs {
+		name := pr.Source.Branch.Name
+		if name != "" && !seen[name] {
+			branches = append(branches, name)
+			seen[name] = true
+		}
+	}
+	return branches, nil
+}
+
 // doRequest performs an authenticated HTTP request and decodes the JSON response.
 func (c *Client) doRequest(method, url string, body any, result any) error {
 	var bodyReader io.Reader
@@ -156,6 +283,11 @@ func (c *Client) doRequest(method, url string, body any, result any) error {
 		return fmt.Errorf("request failed: %w", err)
 	}
 	defer resp.Body.Close()
+
+	// Handle 204 No Content (e.g. DELETE responses)
+	if resp.StatusCode == http.StatusNoContent {
+		return nil
+	}
 
 	// Handle error responses
 	if resp.StatusCode >= 400 {
