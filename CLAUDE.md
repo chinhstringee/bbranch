@@ -71,6 +71,7 @@ buck clean --merged --group backend --dry-run
 buck list          # List workspace repos
 buck login         # OAuth login flow
 buck setup         # Interactive API token setup
+buck completion bash|zsh|fish|powershell  # Generate shell completion script
 ```
 
 ## Release
@@ -103,7 +104,8 @@ main.go → cmd.Execute()
   ├── pr_list.go      List PRs across repos with filters
   ├── status.go       PR status dashboard across repos
   ├── clean.go        Branch cleanup (single or --merged)
-  └── setup.go        Interactive API token configuration
+  ├── setup.go        Interactive API token configuration
+  └── completion.go   Shell completion generation + dynamic completers
   │
   internal/     (Private packages)
   ├── auth/         OAuth 2.0 + PKCE flow, token persistence (~/.buck/token.json)

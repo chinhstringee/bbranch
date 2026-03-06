@@ -11,6 +11,7 @@ Multi-repo orchestration tool for Bitbucket Cloud. Create branches and pull requ
 - **Interactive selection** — TUI multi-select when no flags given
 - **Dry run** — Preview actions without executing
 - **Auth flexibility** — API token (default) or OAuth 2.0 with PKCE
+- **Shell completion** — Tab completion for bash, zsh, fish, and powershell
 
 ## Install
 
@@ -71,6 +72,7 @@ buck pr <branch> --dry-run
 buck list                     # list workspace repos
 buck login                    # OAuth browser flow
 buck setup                    # interactive API token setup
+buck completion zsh           # generate shell completion script
 ```
 
 ### Flags
@@ -121,6 +123,46 @@ defaults:
 ```
 
 All credential fields support `${ENV_VAR}` expansion.
+
+## Shell Completion
+
+Enable tab completion for commands, flags, and dynamic values (repo names, groups).
+
+**Bash:**
+
+```bash
+source <(buck completion bash)
+
+# Persist (Linux):
+buck completion bash > /etc/bash_completion.d/buck
+
+# Persist (macOS):
+buck completion bash > $(brew --prefix)/etc/bash_completion.d/buck
+```
+
+**Zsh:**
+
+```bash
+buck completion zsh > "${fpath[1]}/_buck"
+exec zsh
+```
+
+**Fish:**
+
+```bash
+buck completion fish | source
+
+# Persist:
+buck completion fish > ~/.config/fish/completions/buck.fish
+```
+
+**PowerShell:**
+
+```powershell
+buck completion powershell | Out-String | Invoke-Expression
+```
+
+Completions include: commands, `--group` (group names), `--repos` (repo slugs), `--from`/`--destination` (common branches), `--strategy` (merge strategies), `--state` (PR states).
 
 ## License
 
